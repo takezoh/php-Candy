@@ -1,0 +1,311 @@
+h1. PHP DOM base Template engine
+
+PHP製DOMベーステンプレートエンジン
+
+* PythonのKidの様に属性値として記述できます。
+* PHPのSmartyの様にファイルを設置しインクルードするだけで使えます。
+* Smartyとの互換モードを実装しているので、既存のSmartyテンプレートを流用できます。
+
+h2. タグ制御属性
+
+h3. php:content
+
+*php:contentの値をPHPとして評価した結果で要素内を置き換える*
+<pre><code>
+php). $php = 'world!!';
+html). <div php:content="hello . $php">php:content</div>
+output). <div>helloworld!!</div>
+</code></pre>
+※PHPの評価結果が偽と評価された場合、親要素（例ではdiv）自体を出力しません。
+※php:replaceと同じ要素に指定した場合、php:replaceが優先されます。
+
+h3. php:replace
+
+*php:replaceの値をPHPとして評価した結果で親要素を置き換える*
+<pre><code>
+php). $php = 'world!!';
+html). <div php:replace="'hello ' . $php">php:replace</div>
+output). hello world!!
+</code></pre>
+※PHPの評価結果が偽と評価された場合、親要素（例ではdiv）自体を出力しません。
+※php:contentと同じ要素に指定した場合、php:replaceが優先されます。
+※php:attr, php:*を同じ要素に指定した場合、php:attr, php:*は評価されません。
+
+h3. php:while
+
+*php:whileの値をPHPとして評価した結果が"真"である限り出力します。*
+<pre><code>
+php). $php = 0;
+html). <div php:while="$php++ < 3">hello</div>
+output). <div>hello</div><div>hello</div><div>hello</div>
+</code></pre>
+※php:foreachと同じ要素に指定した場合、php:foreachが優先されます。
+
+h3. php:foreach
+
+*php:foreachの値をPHP::foreachとして評価し、配列要素分繰り返し出力します。*
+<pre><code>
+php). $php = array( 'apple', 'orange' );
+html). <div php:foreach="$php as $var" php:content="$var">fruit</div>
+output). <div>apple</div><div>orange</div>
+</code></pre>
+※php:whileと同じ要素に指定した場合、php:foreachが優先されます。
+
+h3. php:foreachelse
+
+*直前の兄弟要素の php:foreach の出力回数が0回の場合に、自要素を出力する。*
+<pre><code>
+php). $php = array();
+html). <div php:foreach="$php as $var" php:content="$var">fruit</div><div php:foreachelse="">php:foreachelse</div>
+output). <div>foreachelse</div>
+</code></pre>
+
+h3. php:if
+
+*php:ifの値をPHP::ifとして評価し、"真"の場合のみ出力します。*
+<pre><code>
+php). $php = true;
+html). <div php:if="$php">true</div><div php:if="!$php">false</div>
+output). <div>true</div>
+</code></pre>
+
+h3. php:elseif
+
+*直前の兄弟要素の php:if 又は php:elseif の評価が"偽"の場合に PHP:if として評価を行う。*
+*また、値が空の場合は、PHP:else として評価し条件分岐を終了する。*
+<pre><code>
+php). $php = 'iphone';
+html). <div php:if="$php == ipod">iPod</div><div php:elseif="$php == iphone">iPhone</div>
+output). <div>iPhone</div>
+</code></pre>
+
+h3. php:cycle
+
+*左辺の値を右辺へ循環代入する。*
+<pre><code>
+php). $php = array( 'apple', 'orange', 'banana' );
+html). <div php:foreach="$php as $var" php:cycle="(odd,even) as $cls" php:class="$cls" php:content="$var">fruit</div>
+output). <div class="odd">apple</div><div class="even">orange</div><div class="odd">banana</div>
+</code></pre>
+※php:foreach, php:while と同じ要素に指定した場合のみ評価します。
+
+h3. php:attrs
+
+*php:attrの値から親要素の属性を設定します。*
+表記は [属性名=値]。複数指定の場合はカンマで区切ります。
+<pre><code>
+php). $src = 'image.jpg';  $alt = '画像';
+html). <img php:attrs="src=http://example.com/ . $src, alt=$alt" />
+output). <img src="http://example.com/image.jpg" alt="画像" />
+</code></pre>
+※php:replaceと同じ要素に指定した場合、評価しません。
+
+h3. php:period
+
+*php:period="StartTime, FinishTime" と記述し、StartTimeからFinishTimeの期間要素を出力します。*
+<pre><code>
+html). <div php:period="2011-02-15, 2011-03-15">php:period</div>
+output). 2011-02-15から2011-03-15の期間出力。  <div>php:period</div>
+</code></pre>
+※指定フォーマットは、*yyyy-mm-dd hh:mm:ss* です。StartTime, FinishTime どちらか一方の指定も可能です。
+※日付部分を省略し *hh:mm:ss* とした場合、実行時の日付として動作します。
+
+h3. php:*
+
+*php:*の値をPHPとして評価し、結果を親要素の*属性に設定します。*
+<pre><code>
+php). $src = 'image.jpg';  $alt = '画像';
+html). <img php:src="http://example.com/ . $src" php:alt="$alt" />
+output). <img src="http://example.com/image.jpg" alt="画像" />
+</code></pre>
+※php:replaceと同じ要素に指定した場合、評価しません。
+
+h2. テンプレート関数
+
+h3. document( $file )
+
+*$fileをインクルードし、出力します。*
+<pre><code>
+include.html). Hello World!
+html). <div php:content="document(include.html)">document()</div>
+output). <div>Hello World!</div>
+</code></pre>
+※その他、PHPの組込関数や、グローバルスコープでコール可能な関数を利用できます。
+
+h2. テンプレート変数の埋め込み
+
+*${ テンプレートPHP } とすることで、テンプレート内のどこへでも変数を書き出すことができます。*
+<pre><code>
+php). $php = 'hello!';
+html). <div> ${$php} <\div>
+output). <div>hello!<\div>
+</code></pre>
+※テンプレート関数なども利用可能です。
+※$をエスケープ *\${ PHP }* と書くことでテンプレート処理を対象外にできます。
+
+h2. テンプレートPHP
+
+文字列に引用符を必要としない基本的にPHPの文法です。
+文字の塊を文字列として認識します。
+空白含む文字列や演算子を文字列として扱いたい場合は、明示的に引用符で括ります。
+
+h2. Smarty互換モード
+
+クラスインスタンス生成時に下記のパラメータで有効になります。
+*smarty-interchangeable* : Smartyのインスタンス
+<pre><code>
+include('./smarty/Smarty.class.php');
+new PDT(array(
+	"smarty-interchangeable" => new Smarty(),
+	"cache-use" => true,
+	"cache-directory" => "./cache/",
+	"template-directory" => "./templates/",
+));
+</code></pre>
+
+h2. PDT::Members
+
+h3. PDT_SimplePhpParser PDT->php_parser
+
+PHPParserインスタンス
+
+h2. PDT::Methods
+
+h3. bool PDT::assign( $name, $value )
+
+*テンプレートに変数を登録します。*
+登録した変数は、テンプレートから、 *"$name"*  で参照できます。
+
+h3. bool PDT::add_compiler( $selector, $callback )
+
+*コンパイル処理時のコンパイラを登録します。*
+$selector: Xpath又は [ *NameSpace : attrName* ] で指定します。
+$callback: コンパイラのコールバック
+*Xpath callback: void callback( $nodeList, $pdt )*
+$nodeList: Xpathで取得したノードリスト
+$pdt: PDTインスタンス
+*NameSpace callback: void callback( $element, $attrValue, $pdt )*
+$element: 対象要素
+$attrValue: 属性値
+$pdt: PDTインスタンス
+
+h3. bool PDT::add_function( $funcName, $callback )
+
+*テンプレート関数を定義します。*
+$funcName: 関数名
+$callback: コールバック関数
+*コールバック: void callback( [$args ...][, $base] )*
+$args: テンプレートからの引数
+$base: $base->call(args...) で関数をoverrideする前の同名テンプレート関数をコールします。
+※PHP5.3.0以上であれば、$base(args...)と記述可能です。
+※グローバルスコープでコール可能な関数は定義せずに利用できます。
+
+h3. void PDT::call( $name, $element, $code )
+
+*php:$name コンパイラをコールする。*
+$name: *foreach*, *while*, *if*, *replace*, *content*, *attrs* から指定します。
+$element: php:$name コンパイラを適用する要素。
+$code: php:$name コンパイラへ渡すPHP文。
+
+h3. DOMText PDT::phpcode( $php_code )
+
+*PHPコードを表現する擬似要素を生成します。*
+※attributeNodeにappendする場合は、PDP::phpcode($php_code)->nodeValue として下さい。
+
+h3. DOMText PDT::phpblock( $block_type )
+
+*PHPBLOCKを表現する擬似要素を生成します。*
+$block_type には、"close" のみ指定できます。
+※attributeNodeにappendする場合は、PDP::phpcode($php_code)->nodeValue として下さい。
+
+h3. DOMNodeList PDT::selector( $xpath )
+
+XPathからDOMNodeListを取得します。
+
+h3. DOMText PDT::text( $text )
+
+文字列ノードを生成します。
+
+h3. DOMElement PDT::element( $tagName, $value, $attributes=array() )
+
+要素ノードを生成します。
+
+h3. DOMAttr PDT::attr( $name, $value )
+
+属性ノードを生成します。
+
+h3. DOMElement PDT::css( $css )
+
+<pre><code>
+<style type="text/css"> $css </style>を生成します。
+</code></pre>
+
+h3. DOMElement PDT::js( $js )
+
+<pre><code>
+<script type="text/javascript"> $js </script>を生成します。
+</code></pre>
+
+h3. DOMElement PDT::nextElement( $node )
+
+$node の後ろに存在する DOMElementオブジェクトを返します。
+
+h3. DOMElement PDT::prevElement( $node )
+
+$node の前に存在する DOMElementオブジェクトを返します。
+
+h3. DOMText PDT::nextText( $node )
+
+$node の後ろに存在する DOMTextオブジェクトを返します。
+
+h3. DOMText PDT::prevText( $node )
+
+$node の前に存在する DOMTextオブジェクトを返します。
+
+h3. bool PDT::before( $newnode, $refnode )
+
+$refnode の前に $newnode を挿入します。
+
+h3. bool PDT::after( $newnode, $refnode )
+
+$refnode の後ろに $newnode を挿入します。
+
+h3. bool PDT::append( $newnode, $refnode )
+
+PDT::push() のエイリアス
+
+h3. bool PDT::push( $newnode, $refnode )
+
+$refnode の子要素の最後に $newnode を追加、又は属性ノードとして追加します。
+
+h3. bool PDT::unshift( $newnode, $refnode )
+
+$refnode の子要素の先頭に $newnode を挿入します。
+
+h3. bool PDT::pop( $node )
+
+$node の最後の子要素を削除します。
+
+h3. bool PDT::shift( $node )
+
+$node の最初の子要素を削除します。
+
+h3. bool PDT::remove( $node )
+
+$node を削除します。
+
+h2. PDT_SimplePhpParser::Methods()
+
+h3. string PDT_SimplePhpParser::parse( $string )
+
+テンプレートPHP（ $string ）を実行可能なPHPへパースする。
+
+h2. PDT_TemplateFunction
+
+h3. mixed PDT_TemplateFunction::call( $args... )
+
+PDT_TemplateFunction::__invoke() へのエイリアス
+
+h3. mixed PDT_TemplateFunction::__invoke( $args... )
+
+上書きした PDT_TemplateFunctionオブジェクトを $args の最後に追加し、登録されたコールバックをコールする。

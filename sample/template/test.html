@@ -1,0 +1,54 @@
+■php:content
+<div php:content="hello . $string">php:content</div>
+
+■php:replace
+<div php:replace="'hello ' . $string">php:replace</div>
+
+■php:while
+<div php:while="$int++ < 3">php:while</div>
+
+■php:foreach
+<div php:foreach="$array as $var" php:content="$var">php:foreach</div>
+
+■php:foreachelse
+<div php:foreach="$null as $var" php:content="$var">php:foreach</div>
+<div php:foreachelse="">php:foreachelse</div>
+
+■php:if
+<div php:if="$true">php:if [ $true ]</div>
+<div php:if="$false">php:if [ $false ]</div>
+
+■php:elseif
+<div php:if="!$true">php:if [ !$true ]</div>
+<div php:elseif="$true">php:elseif [ $true ]</div>
+<div php:if="!$true">php:if [ !$true ]</div>
+<div php:elseif="">php:elseif [ ]</div>
+
+■php:cycle
+<div php:foreach="$array as $var" php:cycle="(odd,even) as $class" php:class="$class" php:content="$var">php:cycle</div>
+
+■php:attrs
+<div php:attrs="class=$string, title=hello . $string">php:attrs</div>
+
+■php:*
+<div php:class="$string", php:title="'hello ' . $string">php:*</div>
+
+■php:period
+<div php:period=", 2011-03-17 18:00:00">php:period</div>
+
+■php:foreach > php:if
+<div php:foreach="$array as $var" php:if="$var" php:content="$var"></div>
+<div php:elseif="$var" php:content="$var"></div>
+<div php:foreachelse="">php:foreachelse</div>
+
+
+■\${ PHP }
+<div>${'hello '. $string}</div>
+
+
+■Functions
+document():<div php:content="Function: . document(include.html)">document()</div>
+
+
+■Add Compiler
+<div wp:for="array">wp:for</div>
