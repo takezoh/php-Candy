@@ -31,6 +31,7 @@ class Candy {
 		'template' => array(
 			'directory' => './template',
 		),
+		'is_html5' => false,
 	);
 
 	public $dom = null;

@@ -78,9 +78,9 @@ class SimplePhpParserTest extends PHPUnit_Framework_TestCase
 	 */
 	function test_user_func() {
 		$php = $this->object->parse('!document()');
-		$this->assertEquals($php, '(!@method_exists($'.SimplePhpParser::USER_FUNC_PREFIX.'document,\'__invoke\')?null:!$'.SimplePhpParser::USER_FUNC_PREFIX.'document->__invoke())');
+		$this->assertEquals($php, '(isset($'.SimplePhpParser::USER_FUNC_PREFIX.'document)&&method_exists($'.SimplePhpParser::USER_FUNC_PREFIX.'document,\'__invoke\')?!$'.SimplePhpParser::USER_FUNC_PREFIX.'document->__invoke():null)');
 		$php = $this->object->parse('document()');
-		$this->assertEquals($php, '(!@method_exists($'.SimplePhpParser::USER_FUNC_PREFIX.'document,\'__invoke\')?null:$'.SimplePhpParser::USER_FUNC_PREFIX.'document->__invoke())');
+		$this->assertEquals($php, '(isset($'.SimplePhpParser::USER_FUNC_PREFIX.'document)&&method_exists($'.SimplePhpParser::USER_FUNC_PREFIX.'document,\'__invoke\')?$'.SimplePhpParser::USER_FUNC_PREFIX.'document->__invoke():null)');
 		$this->assertEquals(eval('return '. $php .';'), null);
 		${SimplePhpParser::USER_FUNC_PREFIX.'document'} = new TemplateFunction('document', array($this, 'publicDummy'));
 		$this->assertEquals(eval('return '. $php .';'), 'Dummy');
@@ -108,15 +108,15 @@ class SimplePhpParserTest extends PHPUnit_Framework_TestCase
 		$subject = 'document(aaa, document(each($test[b][$c->test($d[c], $c->test())][e]), ccc, $o->b()))';
 		$php = $this->object->parse($subject);
 		$expected = array(
-			'(!@method_exists($'.SimplePhpParser::USER_FUNC_PREFIX.'document,\'__invoke\')?null:$'.SimplePhpParser::USER_FUNC_PREFIX.'document->__invoke(',
+			'(isset($'.SimplePhpParser::USER_FUNC_PREFIX.'document)&&method_exists($'.SimplePhpParser::USER_FUNC_PREFIX.'document,\'__invoke\')?$'.SimplePhpParser::USER_FUNC_PREFIX.'document->__invoke(',
 				'\'aaa\', ',
-				'(!@method_exists($'.SimplePhpParser::USER_FUNC_PREFIX.'document,\'__invoke\')?null:$'.SimplePhpParser::USER_FUNC_PREFIX.'document->__invoke(',
+				'(isset($'.SimplePhpParser::USER_FUNC_PREFIX.'document)&&method_exists($'.SimplePhpParser::USER_FUNC_PREFIX.'document,\'__invoke\')?$'.SimplePhpParser::USER_FUNC_PREFIX.'document->__invoke(',
 					'(!is_callable(\'each\')?null:each(',
 						'$test[\'b\'][$c->test($d[\'c\'], $c->test())][\'e\']',
 					')), ',
 					'\'ccc\', $o->b()',
-				'))',
-			'))',
+				'):null)',
+			'):null)',
 		);
 		$this->assertEquals($php, join('', $expected));
 	}

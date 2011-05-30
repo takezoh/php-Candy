@@ -48,7 +48,7 @@ class SimplePhpParser {
 					$token = substr($token, 1);
 				}
 				if (array_key_exists(self::USER_FUNC_PREFIX.$token, $this->_functions)) {
-					return '(!@method_exists($'. self::USER_FUNC_PREFIX .$token.',\'__invoke\')?null:'.$ex.'$'.self::USER_FUNC_PREFIX.$token.'->__invoke'.$this->parse($matched[3]).')';
+					return '(isset($'. self::USER_FUNC_PREFIX .$token.')&&method_exists($'. self::USER_FUNC_PREFIX .$token.',\'__invoke\')?'. $ex.'$'.self::USER_FUNC_PREFIX.$token.'->__invoke'.$this->parse($matched[3]).':null)';
 				}
 				return '(!is_callable(\''.$token.'\')?null:'.$ex.$token.$this->parse($matched[3]).')';
 			}
