@@ -9,9 +9,9 @@ class candyTest extends PHPUnit_Framework_TestCase
 	protected function setUp()
 	{
 		$this->object = new Candy(array(
-			'cache-use' => true,
-			'cache-directory' => './sample/cache',
-			'template-directory' => './sample/template',
+			'cache.use' => true,
+			'cache.directory' => './sample/cache',
+			'template.directory' => './sample/template',
 		));
 	}
 

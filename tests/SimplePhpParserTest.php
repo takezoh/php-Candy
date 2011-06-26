@@ -9,7 +9,8 @@ class SimplePhpParserTest extends PHPUnit_Framework_TestCase
 
 	protected function setUp()
 	{
-		$this->object = new SimplePhpParser(array(SimplePhpParser::USER_FUNC_PREFIX.'document' => array($this, 'publicDummy')));
+		$functions = array(SimplePhpParser::USER_FUNC_PREFIX.'document' => array($this, 'publicDummy'));
+		$this->object = new SimplePhpParser(&$functions);
 	}
 
 	protected function tearDown()

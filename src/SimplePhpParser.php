@@ -2,12 +2,10 @@
 
 class SimplePhpParser {
 
-	const USER_FUNC_PREFIX = '__candy_func_';
 	private $_operators = array();
 	private $_functions = array();
 
-	function __construct($functions=array()) {
-		$this->_functions = &$functions;
+	function __construct() {
 		$operators = array(
 			// 'as', '=>',
 			'?', ':', // '(', ')', ',',
@@ -47,10 +45,12 @@ class SimplePhpParser {
 					$ex = '!';
 					$token = substr($token, 1);
 				}
-				if (array_key_exists(self::USER_FUNC_PREFIX.$token, $this->_functions)) {
-					return '(isset($'. self::USER_FUNC_PREFIX .$token.')&&method_exists($'. self::USER_FUNC_PREFIX .$token.',\'__invoke\')?'. $ex.'$'.self::USER_FUNC_PREFIX.$token.'->__invoke'.$this->parse($matched[3]).':null)';
-				}
-				return '(!is_callable(\''.$token.'\')?null:'.$ex.$token.$this->parse($matched[3]).')';
+				$args = '($'.Candy::USER_FUNC_PREFIX.$token.','.substr($this->parse($matched[3]), 1);
+				return '(isset($'.Candy::USER_FUNC_PREFIX.$token.')?'. $ex.'call_user_func'.$args.':(is_callable(\''.$token.'\')?'.$ex.$token.$args.':null))';
+				// if (array_key_exists(self::USER_FUNC_PREFIX.$token, $this->_functions)) {
+					// return '(isset($'. self::USER_FUNC_PREFIX .$token.')&&method_exists($'. self::USER_FUNC_PREFIX .$token.',\'__invoke\')?'. $ex.'$'.self::USER_FUNC_PREFIX.$token.'->__invoke'.$this->parse($matched[3]).':null)';
+				// }
+				// return '(!is_callable(\''.$token.'\')?null:'.$ex.$token.$this->parse($matched[3]).')';
 			}
 			if (array_key_exists($len, $this->_operators) && in_array($token, $this->_operators[$len])) {
 				return " ". $token ." ";
