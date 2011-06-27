@@ -18,6 +18,7 @@ class Candy {
 	const VERSION = "0.5.0";
 	const PRIVATE_VARS_PREFIX = '__candy_';
 	const USER_FUNC_PREFIX = '__candy_func_';
+	const ATTR_DUMMY_NAME = 'candy-%s_%s';
 
 	private $_defaults = array(
 		'cache.use' => true,
@@ -131,7 +132,15 @@ class Candy {
 				include(dirname(__FILE__).'/DOMCompiler.php');
 				include(dirname(__FILE__).'/CandyDefaultCompiler.php');
 			}
-			$compiler = new DOMCompiler($this->_compilers, $this->_config);
+			$defaultCompilers = new CandyDefaultCompilers();
+			$compiler = new DOMCompiler($this->_config);
+			foreach (array('period', 'foreach', 'while', 'if', 'replace', 'content', 'attrs', 'cycle', 'foreachelse', 'elseif', 'else') as $phpcompiler) {
+				$compiler->add_compiler('php:'.$phpcompiler, array($defaultCompilers, 'nodelist_compiler_period'));
+			}
+			$compiler->add_compiler('php:*', array($defaultCompilers, 'nodelist_compiler_attribute'));
+			foreach ($this->_compilers as $user_compiler) {
+				$compiler->add_compiler($user_compiler['selector'], $user_compiler['callback'], $user_compiler['args']);
+			}
 			$compiled = $compiler->compile(file_get_contents($tpl));
 			file_put_contents($cache,
 				"<?php /* ". json_encode(array(
@@ -172,9 +181,9 @@ class Candy {
 		}
 		return false;
 	}
-	public function add_compiler($selector, $callback, $args=null) {
+	public function add_compiler($selector, $callback) {
 		$this->_get_external_file();
-		return $this->_compilers[] = compact('selector', 'callback', 'args');
+		return $this->_compilers[] = compact('selector', 'callback');
 	}
 	public function call($name, $element, $code) {
 		if ($this->_php_compilers[$name]['compiler'] && $element->nodeType === XML_ELEMENT_NODE) {

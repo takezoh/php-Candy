@@ -17,9 +17,10 @@ class EasyDOMController implements Iterator {
 		if (is_string($source)) {
 			$this->provider->dom = new DOMDocument();
 			$this->provider->dom->preserveWhiteSpace = false;
-			$this->provider->dom->loadHTML(trim($source));
-			$this->provider->xpath = new DOMXPath($this->provider->dom);
-			$this->nodeList[] = $this->provider->dom->documentElement;
+			if (@$this->provider->dom->loadHTML(trim($source))) {
+				$this->provider->xpath = new DOMXPath($this->provider->dom);
+				$this->nodeList[] = $this->provider->dom->documentElement;
+			}
 		}
 		else {
 			if ($source instanceof DOMNode || $source instanceof DOMNodeList) {

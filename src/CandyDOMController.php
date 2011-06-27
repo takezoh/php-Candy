@@ -8,7 +8,7 @@ class CandyDOMController extends EasyDOMController {
 	}
 
 	function query($expr, $context=null) {
-		$elements = parent::query(preg_replace('/(?:attribute::|@)(\w+):(\w+)/', '@candy-$1_$2', $expr), $context);
+		$elements = parent::query(preg_replace('/(?:attribute::|@)(\w+):(\w+)/', '@'.sprintf(Candy::ATTR_DUMMY_NAME, '$1','$2'), $expr), $context);
 		$elements->query = $expr;
 		return $elements;
 	}
@@ -17,7 +17,7 @@ class CandyDOMController extends EasyDOMController {
 		$is_ns = false;
 		if (is_string($key) && preg_match('/^(\w+):(.*)$/', $key, $matched)) {
 			$is_ns = true;
-			$key = 'candy-'.$matched[1].'_'.$matched[2];
+			$key = sprintf(Candy::ATTR_DUMMY_NAME, $matched[1], $matched[2]);
 			if (!is_null($value)) {
 				$value = $this->provider->compiler->add_phpcode($value);
 			}
@@ -38,7 +38,7 @@ class CandyDOMController extends EasyDOMController {
 	function removeAttr($name) {
 		$name = (array)$name;
 		foreach ($name as &$var) {
-			$var = preg_replace('/^(\w+):(.*)$/', 'candy-$1_$2', $var);
+			$var = preg_replace('/^(\w+):(.*)$/', sprintf(Candy::ATTR_DUMMY_NAME, '$1','$2'),  $var);
 		}
 		return parent::removeAttr($name);
 	}
