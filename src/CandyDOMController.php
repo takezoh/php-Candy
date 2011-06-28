@@ -55,7 +55,7 @@ class CandyDOMController extends EasyDOMController {
 		$wrapper = $this->provider->dom->createElement('phpblock');
 		$wrapper->setAttribute('type', $type);
 		if (!is_null($eval)) {
-			$wrapper->setAttribute('eval', $this->provider->compiler->add_phpcode($eval, 'phpblock'));
+			$wrapper->setAttribute('eval', $this->provider->compiler->add_phpcode($eval));
 		}
 		foreach ($this->nodeList as $node) {
 			$block = $wrapper->cloneNode(false);

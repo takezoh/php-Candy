@@ -95,7 +95,7 @@ class DOMCompilerText extends PHPUnit_Framework_TestCase
 		$subject = '<html><body id="${$attr_simple_php}" class="<?php echo $attr_native_php; ?>">\${hello!}${$simple_php}<?php echo $native_php; ?></body></html>';
 		$source = $preload->invoke($this->object, $subject);
 		$source = preg_replace('/.*?(<body[^>]*>.*?<\/body>).*$/', '$1', $source);
-		$this->assertEquals($source, '<body id="%@CANDY:phpblock=0%" class="%@CANDY:phpblock=1%">${hello!}<php><![CDATA[echo $simple_php;]]></php><php><![CDATA[echo $native_php;]]></php></body>');
+		$this->assertEquals($source, '<body id="%@CANDY:phpset=0%" class="%@CANDY:phpset=1%">${hello!}<php><![CDATA[echo $simple_php;]]></php><php><![CDATA[echo $native_php;]]></php></body>');
 
 		$source = $save->invoke($this->object, $source);
 		$source = preg_replace('/.*?(<body[^>]*>.*?<\/body>).*$/', '$1', $source);
