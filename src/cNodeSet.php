@@ -1,6 +1,6 @@
 <?php
 
-class EasyDOMController implements Iterator {
+class cNodeSet implements Iterator {
 
 	protected $classname = __CLASS__;
 	protected $provider = null;
@@ -8,38 +8,29 @@ class EasyDOMController implements Iterator {
 	protected $length = 0;
 	protected $query = null;
 
-	function __construct($source, $provider=null, $query=null) {
+	function __construct($source=null, $provider=null, $query=null) {
 		$this->query = $query;
 		$this->provider =& $provider;
 		if (is_null($this->provider)) {
 			$this->provider = (object) null;
 		}
-		if (is_string($source)) {
-			$this->provider->dom = new DOMDocument();
-			$this->provider->dom->preserveWhiteSpace = false;
-			if (@$this->provider->dom->loadHTML(trim($source))) {
-				$this->provider->xpath = new DOMXPath($this->provider->dom);
-				$this->nodeList[] = $this->provider->dom->documentElement;
-			}
+
+		if ($source instanceof DOMNode || $source instanceof DOMNodeList) {
+			$source = array($source);
 		}
-		else {
-			if ($source instanceof DOMNode || $source instanceof DOMNodeList) {
-				$source = array($source);
-			}
-			foreach ((array)$source as $node) {
-				if ($node instanceof DOMNode) {
+		foreach ((array)$source as $node) {
+			if ($node instanceof DOMNode) {
+				if ($node->nodeType === XML_ELEMENT_NODE && !in_array($node, $this->nodeList, true)) {
+					$this->nodeList[] = $node;
+				}
+			} else if ($node instanceof DOMNodeList) {
+				foreach ($node as $node) {
 					if ($node->nodeType === XML_ELEMENT_NODE && !in_array($node, $this->nodeList, true)) {
 						$this->nodeList[] = $node;
 					}
-				} else if ($node instanceof DOMNodeList) {
-					foreach ($node as $node) {
-						if ($node->nodeType === XML_ELEMENT_NODE && !in_array($node, $this->nodeList, true)) {
-							$this->nodeList[] = $node;
-						}
-					}
-				} else {
-					break;
 				}
+			} else {
+				break;
 			}
 		}
 		$this->length = count($this->nodeList);
@@ -52,24 +43,17 @@ class EasyDOMController implements Iterator {
 		case 'query':
 			return $this->query;
 		default:
-			// $var = $this->node->{$key};
-			// if ($var instanceof DOMNode || $var instanceof DOMNodeList) {
-				// return new $this->classname($var, $this->provider->dom, $this->xpath);
-			// }
-			// return $var;
+			if (isset($this->nodeList[0])) {
+				return $this->nodeList[0]->{$key};
+			}
 		}
+		return null;
 	}
 
 	function __call($method, $args) {
-		return call_user_func_array(array($this->provider->dom, $method), $args);
-	}
-
-	function saveHTML() {
-		return $this->provider->dom->saveHTML();
-	}
-
-	function query($expr, $context=null) {
-		return new $this->classname($this->provider->xpath->query($expr, $this->node), $this->provider, $expr);
+		if (isset($this->nodeList[0])) {
+			return call_user_func_array(array($this->nodeList[0], $method), $args);
+		}
 	}
 
 	function attr($key, $value=null) {

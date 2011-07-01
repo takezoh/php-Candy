@@ -1,6 +1,8 @@
 <?php
 
-class CandyDOMController extends EasyDOMController {
+include(dirname(__FILE__).'/cNodeSet.php');
+
+class candyNodeSet extends cNodeSet {
 
 	function __construct($source, $provider=null) {
 		parent::__construct($source, $provider);

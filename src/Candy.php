@@ -11,7 +11,7 @@
  * @version 0.5.0
  */
 
-include(dirname(__FILE__).'/TemplateFunction.php');
+include(dirname(__FILE__).'/templateFunction.php');
 
 class Candy {
 
@@ -63,10 +63,10 @@ class Candy {
 			}
 		}
 		// Logger instance
-		if ($this->_config->log->type) {
-			if (!class_exists('Log')) include('Log.php');
-			$this->_logger = Log::factory($this->_config->log->type, $this->_config->log->directory.'/error.log', 'Candy.php');
-		}
+		// if ($this->_config->log->type) {
+			// if (!class_exists('Log')) include('Log.php');
+			// $this->_logger = Log::factory($this->_config->log->type, $this->_config->log->directory.'/error.log', 'Candy.php');
+		// }
 		// Init "Template Functions"
 		$this->_functions = array(
 			self::USER_FUNC_PREFIX.'document' => new TemplateFunction('document', array($this, '_func_document')),
@@ -126,11 +126,11 @@ class Candy {
 		// Compile!!
 		if ($is_compile && $tpl_exists) {
 			if (!class_exists('DOMCompiler')) {
-				include(dirname(__FILE__).'/SimplePhpParser.php');
-				include(dirname(__FILE__).'/EasyDOMController.php');
-				include(dirname(__FILE__).'/CandyDOMController.php');
+				include(dirname(__FILE__).'/simplePhpParser.php');
+				include(dirname(__FILE__).'/candyNodeSet.php');
+				include(dirname(__FILE__).'/candyQuery.php');
 				include(dirname(__FILE__).'/DOMCompiler.php');
-				include(dirname(__FILE__).'/CandyDefaultCompiler.php');
+				include(dirname(__FILE__).'/candyDefaultCompiler.php');
 			}
 			$defaultCompilers = new CandyDefaultCompilers();
 			$compiler = new DOMCompiler($this->_config);
@@ -185,12 +185,6 @@ class Candy {
 		$this->_get_external_file();
 		return $this->_compilers[] = compact('selector', 'callback');
 	}
-	public function call($name, $element, $code) {
-		if ($this->_php_compilers[$name]['compiler'] && $element->nodeType === XML_ELEMENT_NODE) {
-			return call_user_func($this->_php_compilers[$name]['compiler'], $element, $code, $this);
-		}
-		return null;
-	}
 	public function add_function($name, $function) {
 		$this->_get_external_file();
 		if (is_callable($function) && $name) {
@@ -237,13 +231,6 @@ class Candy {
 		return $contents;
 	}
 
-
-	// public function selector($selector) {
-		// if ($this->xpath) {
-			// return $this->dom->query($selector);
-		// }
-		// return false;
-	// }
 }
 
 ?>

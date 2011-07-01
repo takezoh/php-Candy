@@ -1,6 +1,6 @@
 <?php
 
-class TemplateFunction {
+class templateFunction {
 
 	private static $bases = array();
 	private $base = null;

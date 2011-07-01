@@ -1,14 +1,15 @@
 <?php
 
-include('src/EasyDOMController.php');
+require_once('src/cNodeSet.php');
+require_once('src/cQuery.php');
 
-class EasyDOMControllerTest extends PHPUnit_Framework_TestCase
+class cNodeSetTest extends PHPUnit_Framework_TestCase
 {
 	protected $object;
 
 	protected function setUp()
 	{
-		$this->object = new EasyDOMController('
+		$this->document = '
 			<html>
 			<head>
 			<title>this is title.</title>
@@ -19,7 +20,8 @@ class EasyDOMControllerTest extends PHPUnit_Framework_TestCase
 			<div id="footer">footer</div>
 			</body>
 			</html>
-		');
+		';
+		$this->object = new cQuery($this->document);
 	}
 
 	protected function tearDown()
@@ -27,7 +29,7 @@ class EasyDOMControllerTest extends PHPUnit_Framework_TestCase
 	}
 
 	function test_attr() {
-		$elements = $this->object->query('//div');
+		$elements = $this->object->query('div');
 		// get
 		$this->assertEquals($elements->eq(0)->attr('id'), 'header');
 		$this->assertEquals($elements->eq(1)->attr('id'), 'wrapper');
@@ -46,7 +48,7 @@ class EasyDOMControllerTest extends PHPUnit_Framework_TestCase
 	}
 
 	function test_css() {
-		$elements = $this->object->query('//div');
+		$elements = $this->object->query('div');
 		// set
 		$elements->css(array('color'=>'#000', 'border'=>'1px solid #000'));
 		for ($i=0; $i<$elements->length; ++$i) {
@@ -65,7 +67,7 @@ class EasyDOMControllerTest extends PHPUnit_Framework_TestCase
 	}
 
 	function test_class() {
-		$elements = $this->object->query('//div');
+		$elements = $this->object->query('div');
 		// add
 		$elements->addClass(array('test','class'));
 		for ($i=0; $i<$elements->length; ++$i) {
@@ -85,9 +87,9 @@ class EasyDOMControllerTest extends PHPUnit_Framework_TestCase
 	}
 
 	function test_to_dom() {
-		$to_dom = new ReflectionMethod('EasyDOMController', '_to_dom');
+		$to_dom = new ReflectionMethod('cNodeSet', '_to_dom');
 		$to_dom->setAccessible(true);
-		$nodes = $to_dom->invoke($this->object, '<b>hello</b>');
+		$nodes = $to_dom->invoke(new cNodeset(null, (object)array('dom'=>new DOMDocument())), '<b>hello</b>');
 		$this->assertEquals($nodes[0]->tagName, 'b');
 		$this->assertEquals($nodes[0]->nodeValue, 'hello');
 	}
@@ -96,9 +98,9 @@ class EasyDOMControllerTest extends PHPUnit_Framework_TestCase
 	 * @depends test_to_dom
 	 */
 	function test_append() {
-		$elements = $this->object->query('//div');
+		$elements = $this->object->query('div');
 		$elements->append('<b>hello</b>');
-		$source = $elements->saveHTML();
+		$source = $this->object->saveHTML();
 		$source = preg_replace('/[\n\t]+/', '', $source);
 		$source = preg_replace('/^.*?<body>(.*?)<\/body>.*$/', '$1', $source);
 		$ret = array(
@@ -113,9 +115,9 @@ class EasyDOMControllerTest extends PHPUnit_Framework_TestCase
 	 * @depends test_to_dom
 	 */
 	function test_before() {
-		$elements = $this->object->query('//div');
+		$elements = $this->object->query('div');
 		$elements->before('<b>hello</b>');
-		$source = $elements->saveHTML();
+		$source = $this->object->saveHTML();
 		$source = preg_replace('/[\n\t]+/', '', $source);
 		$source = preg_replace('/^.*?<body>(.*?)<\/body>.*$/', '$1', $source);
 		$ret = array(
@@ -130,9 +132,9 @@ class EasyDOMControllerTest extends PHPUnit_Framework_TestCase
 	 * @depends test_to_dom
 	 */
 	function test_after() {
-		$elements = $this->object->query('//div');
+		$elements = $this->object->query('div');
 		$elements->after('<b>hello</b>');
-		$source = $elements->saveHTML();
+		$source = $this->object->saveHTML();
 		// var_dump($source); die;
 		$source = preg_replace('/[\n\t]+/', '', $source);
 		$source = preg_replace('/^.*?<body>(.*?)<\/body>.*$/', '$1', $source);
@@ -148,9 +150,9 @@ class EasyDOMControllerTest extends PHPUnit_Framework_TestCase
 	 * @depends test_to_dom
 	 */
 	function test_replace() {
-		$elements = $this->object->query('//div');
+		$elements = $this->object->query('div');
 		$elements->replace('<b>hello</b>');
-		$source = $elements->saveHTML();
+		$source = $this->object->saveHTML();
 		$source = preg_replace('/[\n\t]+/', '', $source);
 		$source = preg_replace('/^.*?<body>(.*?)<\/body>.*$/', '$1', $source);
 		$ret = array(
@@ -162,18 +164,18 @@ class EasyDOMControllerTest extends PHPUnit_Framework_TestCase
 	}
 
 	function test_remove() {
-		$elements = $this->object->query('//div');
+		$elements = $this->object->query('div');
 		$elements->remove();
-		$source = $elements->saveHTML();
+		$source = $this->object->saveHTML();
 		$source = preg_replace('/[\n\t]+/', '', $source);
 		$source = preg_replace('/^.*?<body>(.*?)<\/body>.*$/', '$1', $source);
 		$this->assertEquals($source, '');
 	}
 
 	function test_empty() {
-		$elements = $this->object->query('//div');
+		$elements = $this->object->query('div');
 		$elements->_empty();
-		$source = $elements->saveHTML();
+		$source = $this->object->saveHTML();
 		$source = preg_replace('/[\n\t]+/', '', $source);
 		$source = preg_replace('/^.*?<body>(.*?)<\/body>.*$/', '$1', $source);
 		$ret = array(
@@ -185,14 +187,14 @@ class EasyDOMControllerTest extends PHPUnit_Framework_TestCase
 	}
 
 	function test_next() {
-		$elements = $this->object->query('//div[@id="header"]');
+		$elements = $this->object->query('div#header');
 		$next = $elements->_next();
 		$this->assertEquals($next->length, 1);
 		$this->assertEquals($next->attr('id'), 'wrapper');
 	}
 
 	function test_nextAll() {
-		$elements = $this->object->query('//div[@id="header"]');
+		$elements = $this->object->query('div#header');
 		$next = $elements->nextAll();
 		$this->assertEquals($next->length, 2);
 		$this->assertEquals($next->eq(0)->attr('id'), 'wrapper');
@@ -200,14 +202,14 @@ class EasyDOMControllerTest extends PHPUnit_Framework_TestCase
 	}
 
 	function test_parent() {
-		$elements = $this->object->query('//div');
+		$elements = $this->object->query('div');
 		$parent = $elements->parent();
 		$this->assertEquals($parent->length, 1);
 		$this->assertEquals($parent->get(0)->tagName, 'body');
 	}
 
 	function test_parents() {
-		$elements = $this->object->query('//div');
+		$elements = $this->object->query('div');
 		$parent = $elements->parents();
 		$this->assertEquals($parent->length, 2);
 		$this->assertEquals($parent->get(0)->tagName, 'body');
@@ -215,7 +217,7 @@ class EasyDOMControllerTest extends PHPUnit_Framework_TestCase
 	}
 
 	function test_siblings() {
-		$this->object = new EasyDOMController('
+		$this->object = new cQuery('
 			<html><body>
 			<div class="wrapper">
 				<span class="selected">menu1</span>

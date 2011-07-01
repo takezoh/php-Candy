@@ -1,9 +1,9 @@
 <?php
 
-require_once('src/SimplePhpParser.php');
-require_once('src/TemplateFunction.php');
+require_once('src/simplePhpParser.php');
+require_once('src/templateFunction.php');
 
-class SimplePhpParserTest extends PHPUnit_Framework_TestCase
+class simplePhpParserTest extends PHPUnit_Framework_TestCase
 {
 	protected $object;
 

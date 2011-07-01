@@ -5,7 +5,6 @@ class DOMCompiler {
 	protected $_config = null;
 	protected $_regexp = array(
 		'open_tag' => '<\s*%s(\s+(?:(?:\'.*?(?<!\\\\)\')|(?:".*?(?<!\\\\)")|[^>])*)?>',
-		'close_tag' => '<\s*\/\s*%s\s*>',
 		'simple_php' => '(?<!\\\\)\${((?:(?:([\'"]).*?(?<!\\\\)\2)|[^}])*)}',
 		'simple_php_escaped' => '\\\\(\${(?:(?:([\'"]).*?(?<!\\\\)\2)|[^}])*})',
 		'native_php' => '<\?php\s*((?:([\'"]).*?(?<!\\\\)\2|.)*?)\s*\?>',
@@ -19,13 +18,6 @@ class DOMCompiler {
 	protected $_smarty_exclude = array();
 	protected $_smarty_header = null;
 
-	protected $_root = null;
-	protected $_doctype = null;
-	protected $_content_type = null;
-	protected $_html_exists = false;
-	protected $_head_exists = false;
-	protected $_body_exists = false;
-
 	function __construct($config) {
 		$this->_config = $config;
 		$this->_php_parser = new SimplePhpParser();
@@ -36,71 +28,7 @@ class DOMCompiler {
 		$this->_compilers[$expr] = $callback;
 	}
 
-	protected function _preloadString($source, $encoding='UTF-8') {
-		// remove BOM
-		if ('efbbbf' === strtolower(join('', unpack('H*', substr($source, 0, 3))))) {
-			$source = substr($source, 3);
-		}
-		$source = preg_replace('/<\!--.*?-->|\t/s', '', $source);
-		$source = preg_replace('/\r\n|\r/s', "\n", trim($source));
-		// $source = mb_convert_encoding($source, 'HTML-ENTITIES', $encoding);
-
-		// get Doctype
-		$this->_doctype = null;
-		if (preg_match('/('.sprintf($this->_regexp['open_tag'], '\!\s*DOCTYPE').')(.*)$/si', $source, $doctype)) {
-			$source = trim($doctype[3]);
-			$this->_doctype = $doctype[1];
-		}
-		if ($this->_html_exists = preg_match('/'.sprintf($this->_regexp['open_tag'].'(.*?)'.$this->_regexp['close_tag'], 'html', 'html').'/si', $source, $html)) {
-			$source = trim($html[2]);
-		}
-		// get Header
-		$this->_content_type = null;
-		if ($this->_head_exists = preg_match('/^(.*?)('.sprintf($this->_regexp['open_tag'].'(.*?)'.$this->_regexp['close_tag'], 'head', 'head').')(.*)$/si', $source, $head)) {
-			$head_dom = new DOMDocument();
-			$head_dom->loadHTML($head[2]);
-			$head_xpath = new DOMXpath($head_dom);
-			if ($meta = $head_xpath->query('//meta[@http-equiv]')) {
-				foreach ($meta as $meta) {
-					if (strtolower($meta->getAttribute('http-equiv')) === 'content-type') {
-						$this->_content_type = '<meta http-equiv="content-type" content="'. $meta->getAttribute('content') .'" />';
-						$meta->parentNode->removeChild($meta);
-						break;
-					}
-				}
-			}
-			$head[0] = trim(preg_replace(
-				'/^.*?(<head[^>]*>)(.*?)<\s*\/\s*head\s*>.*$/is',
-				'$1<meta http-equiv="content-type" content="text/html; charset=utf8" />$2</head>',
-				html_entity_decode($head_dom->saveHTML())
-			));
-			$source = $head[1] . $head[5];
-		}
-		// get Body
-		if ($this->_body_exists = preg_match('/'.sprintf($this->_regexp['open_tag'].'(.*?)'.$this->_regexp['close_tag'], 'body', 'body').'/si', $source, $body)) {
-			$source = trim($body[2]);
-		}
-
-		// restore source
-		if ($this->_body_exists || !$this->_head_exists) {
-			$source = '<body'. (!empty($body[1]) ? ' '. trim($body[1]) : '') .'>'. $source .'</body>';
-		}
-		$source = $this->_head_exists ? $head[0] . $source : '<head><meta http-equiv="content-type" content="text/html; charset=utf8" /></head>'. $source;
-		// $source = $this->_head_exists ? $head[0] . $source : '<head></head>'. $source;
-		$source = '<html'. (!empty($html[1]) ? ' '. trim($html[1]) : '') .'>'. $source .'</html>';
-		// $source = $this->_doctype ? $this->_doctype . $source : '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">'. $source;
-		$source = $this->_doctype ? $this->_doctype . $source : $source;
-
-		// DOM: ContextNode
-		$this->_root = null;
-		if ($this->_body_exists && $this->_head_exists || $this->_html_exists) {
-			$this->_root = 'html';
-		} else if ($this->_body_exists) {
-			$this->_root = 'body';
-		} else if ($this->_head_exists) {
-			$this->_root = 'head';
-		}
-
+	protected function _preload($source) {
 		// replace extended attributes
 		$source = preg_replace_callback('/'.sprintf($this->_regexp['open_tag'], '[^\/\!\-\[]\w*').'/s', array($this, '_cb_element_tags'), $source);
 		// replace simple php code
@@ -115,18 +43,8 @@ class DOMCompiler {
 		}
 		return $source;
 	}
+
 	protected function _save($source) {
-		if (preg_match('/<'. $this->_root .'[^>]*>(.*)<\/'. $this->_root .'>/s', $source, $matched)) {
-			$source = $matched[$this->_root ? 0 : 1];
-		}
-		if (!$this->_head_exists) {
-			$source = preg_replace('/<head[^>]*>.*?<\/head>/s', '', $source);
-		} else {
-			$source = preg_replace('/<meta.*?http-equiv\s*=\s*([\'"])\s*content-type\s*\1[^>]*>/', $this->_content_type, $source);
-		}
-		if ($this->_html_exists && $this->_doctype) {
-			$source = $this->_doctype . $source;
-		}
 		$source = preg_replace('/<php>(?:<\!\[CDATA\[)?(.*?)(?:\]\]>)?<\/php>/s', '<?php $1 ?>', $source);
 		$source = preg_replace('/<phpblock type="(.*?)" eval="(.*?)">(.*?)<\/phpblock>/s', '<?php $1($2){ ?>$3<?php } ?>', $source);
 		$source = preg_replace('/<phpblock type="(.*?)">(.*?)<\/phpblock>/s', '<?php $1{ ?>$3<?php } ?>', $source);
@@ -237,12 +155,8 @@ class DOMCompiler {
 
 	// compiler
 	public function compile($source) {
-		$dom = new CandyDOMController($this->_preloadString(trim($source)), (object)array('compiler'=>&$this));
-		if (!$this->_root || $this->_root === 'body') {
-			$context = $dom->query('//body')->get(0);
-		} else {
-			$context = $dom->query('//'.$this->_root)->get(0);
-		}
+		$query = new candyQuery($this->_preload(trim($source)), $this);
+
 		foreach (array_unique($this->_compile_triggers) as $expr) {
 			$is_nscompiler = false;
 			if (preg_match('/^(\w+):([\w\-]+)$/', $expr, $matched)) {
@@ -258,7 +172,7 @@ class DOMCompiler {
 			if ($is_nscompiler) {
 				$expr = '//*[@'. $ns .':'. $name .']';
 			}
-			$elements = $dom->query($expr, $context);
+			$elements = $query->query($expr, $context);
 			if (is_callable($compiler) && $elements->length) {
 				call_user_func($compiler, $elements, $this);
 			}
@@ -267,7 +181,7 @@ class DOMCompiler {
 			}
 		}
 		return  array(
-			'source' => $this->_save($dom->saveHTML()),
+			'source' => $query->save(),
 			'smarty_header' => $this->_smarty_header,
 		);
 	}
