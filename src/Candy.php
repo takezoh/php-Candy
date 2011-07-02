@@ -42,8 +42,9 @@ class Candy {
 	function __construct($config=array(), $_vars=array()) {
 		// Make config
 		$this->_get_external_file();
+		$this->_defaults = array_merge($this->_defaults, $config);
 		$this->_config = (object) null;
-		foreach (array_merge($this->_defaults, $config)as $key => $value) {
+		foreach ($this->_defaults as $key => $value) {
 			$ref =& $this->_config;
 			foreach (explode(".", $key, 2) as $type) {
 				$ref =& $ref->{$type};
@@ -206,18 +207,9 @@ class Candy {
 	}
 
 	function cloneInstance() {
-		$config = array();
-		foreach ((array)$this->_config as $confType => $conf) {
-			if (is_array($conf)) {
-				foreach ((array)$conf as $confName => $value) {
-					$config[$confType .'-'. $confName] = $value;
-				}
-			} else {
-				$config[$confType] = $conf;
-			}
-		}
-		return new Candy($config, $this->_vars);
+		return new Candy($this->_defaults, $this->_vars);
 	}
+
 	function _func_document($file) {
 		$candy = $this->cloneInstance();
 		if (preg_match('/\.(?:tpl|html|htm)$/', $file)) {
