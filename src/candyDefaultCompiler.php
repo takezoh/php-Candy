@@ -17,7 +17,7 @@ class CandyDefaultCompilers {
 	// php:replace
 	function nodelist_compiler_replace($elements, $compiler) {
 		foreach ($elements as $element) {
-			$varname = '$'.self::PRIVATE_VARS_PREFIX.'tmp_'. uniqid();
+			$varname = '$'.Candy::PRIVATE_VARS_PREFIX.'tmp_'. uniqid();
 			$element->before($element->php($varname .'='. $compiler->PHPParse($element->attr('php:replace')).';'));
 			$element->phpwrapper('if', '(bool)'. $varname);
 			$element->before($element->php('echo '. $varname .';'));
@@ -39,11 +39,11 @@ class CandyDefaultCompilers {
 				$element->phpwrapper('foreach', '(array)'.$var.' as '.$key.($val ? ' => '.$val:''));
 				if ($do_cycle) $element->before($do_cycle);
 
-				$foreach = $wrapper->_next();
-				if (!is_null($foreach->attr('php:foreachelse'))) {
-					$foreach->phpwrapper('else');
-					$foreach->removeAttr('php:foreachelse');
-				}
+				// $foreach = $wrapper->_next();
+				// if (!is_null($foreach->attr('php:foreachelse'))) {
+					// $foreach->phpwrapper('else');
+					// $foreach->removeAttr('php:foreachelse');
+				// }
 			}
 		}
 		$element->removeAttr(array('php:foreach', 'php:while'));
@@ -112,7 +112,7 @@ class CandyDefaultCompilers {
 			foreach (explode(',', $element->attr('php:attrs')) as $value) {
 				list($name, $value) = explode('=', $value, 2);
 				if (!empty($value)) {
-					$element->attr(trim($name), 'echo '. $compiler->PHPParse(trim($value)) .';');
+					$element->attrPHP(trim($name), 'echo '. $compiler->PHPParse(trim($value)) .';');
 				}
 			}
 		}
@@ -131,11 +131,11 @@ class CandyDefaultCompilers {
 
 	// php:attribute
 	function nodelist_compiler_attribute($elements, $compiler) {
-		$name = preg_replace('/^\/\/\*\[@php:(.*)\]$/', '$1', $elements->query);
+		$name = preg_replace('/^\*\[php:(.*)\]$/', '$1', $elements->query);
 		foreach ($elements as $element) {
 			$value = $element->attr('php:'.$name);
 			if (!empty($value)) {
-				$element->attr($name, 'echo '. $compiler->PHPParse($value) .';');
+				$element->attrPHP($name, 'echo '. $compiler->PHPParse($value) .';');
 			}
 		}
 		$elements->removeAttr('php:'.$name);

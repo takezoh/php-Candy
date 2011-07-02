@@ -28,18 +28,18 @@ $candy->assign('null', null);
 $candy->assign('true', true);
 $candy->assign('false', false);
 
-$candy->add_function('now', 'add_function');
-$candy->add_compiler('wp:for', 'add_compiler');
+// $candy->add_function('now', 'add_function');
+// $candy->add_compiler('wp:for', 'add_compiler');
 // function add_function($file, $base) {
 	// return "\nOverride Document(): \"document($file)\"\nBase Document(): " . $base->call($file);
 // }
-function add_function() {
-	return date('Y-m-d H:i:s');
-}
-function add_compiler($element, $value, $candy) {
-	$candy->call("foreach", $element, '$'.$value.' as $var');
-	$candy->call("content", $element, '$var');
-}
+// function add_function() {
+	// return date('Y-m-d H:i:s');
+// }
+// function add_compiler($element, $value, $candy) {
+	// $candy->call("foreach", $element, '$'.$value.' as $var');
+	// $candy->call("content", $element, '$var');
+// }
 
 echo '<hr><h2>Template</h2>';
 echo htmlspecialchars(file_get_contents('sample/template/test.html'));

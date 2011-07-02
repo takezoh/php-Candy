@@ -135,7 +135,7 @@ class Candy {
 			$defaultCompilers = new CandyDefaultCompilers();
 			$compiler = new DOMCompiler($this->_config);
 			foreach (array('period', 'foreach', 'while', 'if', 'replace', 'content', 'attrs', 'cycle', 'foreachelse', 'elseif', 'else') as $phpcompiler) {
-				$compiler->add_compiler('php:'.$phpcompiler, array($defaultCompilers, 'nodelist_compiler_period'));
+				$compiler->add_compiler('php:'.$phpcompiler, array($defaultCompilers, 'nodelist_compiler_'.$phpcompiler));
 			}
 			$compiler->add_compiler('php:*', array($defaultCompilers, 'nodelist_compiler_attribute'));
 			foreach ($this->_compilers as $user_compiler) {

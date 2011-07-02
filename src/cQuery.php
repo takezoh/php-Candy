@@ -10,11 +10,13 @@ class cQuery {
 		'close_tag' => '<\s*\/\s*%s\s*>',
 	);
 
-	private $dom = null;
-	private $xpath = null;
+	protected $dom = null;
+	protected $xpath = null;
+	protected $expr = null;
+	protected $contextnode = null;
+	protected $documentElement = null;
 
 	protected $_root = null;
-	protected $_contextnode = null;
 	protected $_doctype = null;
 	protected $_content_type = null;
 	protected $_html_exists = false;
@@ -27,9 +29,9 @@ class cQuery {
 		if (@$this->dom->loadHTML($this->_preload(trim($source)))) {
 			$this->xpath = new DOMXPath($this->dom);
 			if (!$this->_root || $this->_root === 'body') {
-				$this->_contextnode = $this->xpath->query('//body')->item(0);
+				$this->documentElement = $this->xpath->query('//body')->item(0);
 			} else {
-				$this->_contextnode = $this->xpath->query('//'.$this->_root)->item(0);
+				$this->documentElement = $this->xpath->query('//'.$this->_root)->item(0);
 			}
 		}
 	}
@@ -102,7 +104,7 @@ class cQuery {
 		$source = $this->_doctype ? $this->_doctype . $source : $source;
 
 		// DOM: ContextNode
-		$this->_root = null;
+		$this->_root = 'body';
 		if ($this->_body_exists && $this->_head_exists || $this->_html_exists) {
 			$this->_root = 'html';
 		} else if ($this->_body_exists) {
@@ -122,7 +124,7 @@ class cQuery {
 		$source = $this->dom->saveHTML();
 
 		if (preg_match('/<'. $this->_root .'[^>]*>(.*)<\/'. $this->_root .'>/s', $source, $matched)) {
-			$source = $matched[$this->_root ? 0 : 1];
+			$source = $matched[$this->_root === 'body' && !$this->_body_exists ? 1 : 0];
 		}
 		if (!$this->_head_exists) {
 			$source = preg_replace('/<head[^>]*>.*?<\/head>/s', '', $source);
@@ -135,7 +137,11 @@ class cQuery {
 		return $source;
 	}
 
-	function query($expr, $type='css') {
+	function query($expr, $contextnode=null, $type='css') {
+		$this->expr = $expr;
+		if (! $this->contextnode = $contextnode) {
+			$this->contextnode = $this->documentElement;
+		}
 		if (strtolower($type) === 'xpath') {
 			return $this->_results_nodeset($this->xpath->query($expr));
 		}
@@ -146,7 +152,7 @@ class cQuery {
 		return new cNodeSet($nodes, (object)array(
 			'dom' => &$this->dom,
 			'query' => &$this,
-		));
+		), $this->expr);
 	}
 
 	protected function _rex_css($query) {
@@ -292,7 +298,7 @@ class cQuery {
 	}
 
 	protected function _nodeset_process($query) {
-		$nodes = array($this->_contextnode);
+		$nodes = array($this->contextnode);
 		while (preg_match('/^(.*?)(?:(?<!:):(\w+)(?:\(([0-9]+)(n)?(?:\s*\+\s*([0-9]+))?\))?(.*)?)?$/', $query, $m)) {
 			if (!empty($m[1])) {
 				$lists = array();

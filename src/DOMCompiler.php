@@ -46,10 +46,18 @@ class DOMCompiler {
 
 	protected function _save($source) {
 		$source = preg_replace('/<php>(?:<\!\[CDATA\[)?(.*?)(?:\]\]>)?<\/php>/s', '<?php $1 ?>', $source);
-		$source = preg_replace('/<phpblock type="(.*?)" eval="(.*?)">(.*?)<\/phpblock>/s', '<?php $1($2){ ?>$3<?php } ?>', $source);
-		$source = preg_replace('/<phpblock type="(.*?)">(.*?)<\/phpblock>/s', '<?php $1{ ?>$3<?php } ?>', $source);
+		$source = preg_replace_callback('/<phpblock type="(.*?)"(?: (eval)="(.*?)")?>((?:(?R)|.)*?)<\/phpblock>/s', array($this, '_cb_phpblock'), $source);
 		$source = preg_replace_callback('/%@CANDY:[^%]+%/', array($this, 'get_phpcode'), $source);
+		$source = preg_replace('/\s+\?>[\s]*<\?php\s+/s', ' ', $source);
 		return $source;
+	}
+
+	protected function _cb_phpblock($matched) {
+		$inner = preg_replace_callback('/<phpblock type="(.*?)"(?: (eval)="(.*?)")?>((?:(?R)|.)*?)<\/phpblock>/s', array($this, '_cb_phpblock'), $matched[4]);
+		if (empty($matched[2])) {
+			return '<?php '.$matched[1].'{ ?>'.$inner.'<?php } ?>';
+		}
+		return '<?php '.$matched[1].'('.$matched[3].'){ ?>'.$inner.'<?php } ?>';
 	}
 
 	protected function _cb_element_tags($matched) {
@@ -58,8 +66,8 @@ class DOMCompiler {
 	protected function _cb_attr($matched) {
 		$name = trim($matched[2]);
 		if (!empty($matched[1])) {
+			$this->_compile_triggers[] = trim($matched[1]).':'.$name;
 			$name = sprintf(Candy::ATTR_DUMMY_NAME, trim($matched[1]), $name);
-			$this->_compile_triggers[] = $name;
 		}
 		$value = $matched[3];
 		$value = preg_replace_callback('/'.$this->_regexp['native_php'].'/', array($this, '_cb_attr_native_php'), $value);
@@ -159,10 +167,13 @@ class DOMCompiler {
 
 		foreach (array_unique($this->_compile_triggers) as $expr) {
 			$is_nscompiler = false;
-			if (preg_match('/^(\w+):([\w\-]+)$/', $expr, $matched)) {
+			if (preg_match('/^(\w+):([\w\*\-]+)$/', $expr, $matched)) {
 				$ns = $matched[1];
 				$name = $matched[2];
 				$is_nscompiler = true;
+			}
+			if ($name === '*') {
+				continue;
 			}
 			if (isset($this->_compilers[$expr])) {
 				$compiler =& $this->_compilers[$expr];
@@ -170,9 +181,9 @@ class DOMCompiler {
 				$compiler =& $this->_compilers[$ns.':*'];
 			}
 			if ($is_nscompiler) {
-				$expr = '//*[@'. $ns .':'. $name .']';
+				$expr = '*['. $ns .':'. $name .']';
 			}
-			$elements = $query->query($expr, $context);
+			$elements = $query->query($expr);
 			if (is_callable($compiler) && $elements->length) {
 				call_user_func($compiler, $elements, $this);
 			}
@@ -181,7 +192,7 @@ class DOMCompiler {
 			}
 		}
 		return  array(
-			'source' => $query->save(),
+			'source' => $this->_save($query->save()),
 			'smarty_header' => $this->_smarty_header,
 		);
 	}

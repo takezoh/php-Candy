@@ -4,37 +4,27 @@ include(dirname(__FILE__).'/cNodeSet.php');
 
 class candyNodeSet extends cNodeSet {
 
-	function __construct($source, $provider=null) {
-		parent::__construct($source, $provider);
+	function __construct($source, $provider=null, $query=null) {
+		parent::__construct($source, $provider, $query);
 		$this->classname = __CLASS__;
 	}
 
-	function query($expr, $context=null) {
-		$elements = parent::query(preg_replace('/(?:attribute::|@)(\w+):(\w+)/', '@'.sprintf(Candy::ATTR_DUMMY_NAME, '$1','$2'), $expr), $context);
-		$elements->query = $expr;
-		return $elements;
-	}
-
 	function attr($key, $value=null) {
-		$is_ns = false;
 		if (is_string($key) && preg_match('/^(\w+):(.*)$/', $key, $matched)) {
-			$is_ns = true;
 			$key = sprintf(Candy::ATTR_DUMMY_NAME, $matched[1], $matched[2]);
-			if (!is_null($value)) {
-				$value = $this->provider->compiler->add_phpcode($value);
-			}
 		}
 		$ret = parent::attr($key, $value);
-		if (!$is_ns || is_null($ret)) return $ret;
-
-		$ret = (array)$ret;
-		foreach ($ret as &$var) {
-			$var = $this->provider->compiler->get_phpcode($var);
-		}
-		if (count($ret) === 1) {
-			return $ret[0];
+		if (is_string($ret) && preg_match('/^%@CANDY:.*%$/', $ret)) {
+			return $this->provider->compiler->get_phpcode($ret);
 		}
 		return $ret;
+	}
+
+	function attrPHP($key, $value=null) {
+		if (!empty($value)) {
+			$value = $this->provider->compiler->add_phpcode($value, 'phpset');
+		}
+		return $this->attr($key, $value);
 	}
 
 	function removeAttr($name) {
@@ -46,7 +36,6 @@ class candyNodeSet extends cNodeSet {
 	}
 
 	function php($code) {
-		// return $this->provider->compiler->phpcode($code);
 		$php = $this->provider->dom->createElement('php');
 		$php->appendChild($this->provider->dom->createCDATASection($code));
 		return $php;
