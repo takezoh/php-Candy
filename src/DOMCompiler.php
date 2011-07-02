@@ -10,6 +10,7 @@ class DOMCompiler {
 		'native_php' => '<\?php\s*((?:([\'"]).*?(?<!\\\\)\2|.)*?)\s*\?>',
 	);
 
+	protected $_query = null;
 	protected $_php_parser = null;
 	protected $_compile_triggers = array();
 	protected $_compilers = array();
@@ -163,7 +164,7 @@ class DOMCompiler {
 
 	// compiler
 	public function compile($source) {
-		$query = new candyQuery($this->_preload(trim($source)), $this);
+		$this->_query = new candyQuery($this->_preload(trim($source)), $this);
 
 		foreach (array_unique($this->_compile_triggers) as $expr) {
 			$is_nscompiler = false;
@@ -183,7 +184,7 @@ class DOMCompiler {
 			if ($is_nscompiler) {
 				$expr = '*['. $ns .':'. $name .']';
 			}
-			$elements = $query->query($expr);
+			$elements = $this->_query->query($expr);
 			if (is_callable($compiler) && $elements->length) {
 				call_user_func($compiler, $elements, $this);
 			}
@@ -191,8 +192,10 @@ class DOMCompiler {
 				$elements->removeAttr($ns.':'.$name);
 			}
 		}
+		$source = $this->_save($this->_query->save());
+		unset($this->_query);
 		return  array(
-			'source' => $this->_save($query->save()),
+			'source' => $source,
 			'smarty_header' => $this->_smarty_header,
 		);
 	}
@@ -200,6 +203,13 @@ class DOMCompiler {
 	// php parser
 	public function PHPParse($code) {
 		return $this->_php_parser->parse($code);
+	}
+
+	// css selector
+	public function query($expr, $contextnode=null, $type='css') {
+		if (!is_null($this->_query)) {
+			return $this->_query->query($expr, $contextnode, $type);
+		}
 	}
 }
 

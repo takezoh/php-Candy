@@ -175,7 +175,7 @@ class cQuery {
 			$this->contextnode = $this->documentElement;
 		}
 		if (strtolower($type) === 'xpath') {
-			return $this->_results_nodeset($this->xpath->query($expr));
+			return $this->_results_nodeset($this->xpath->query($expr, $contextnode));
 		}
 		return $this->_results_nodeset($this->_rex_css($expr));
 	}

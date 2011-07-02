@@ -11,7 +11,6 @@ class CandyDefaultCompilers {
 			$element->phpwrapper('if', '(bool)'.$varname);
 			$element->append($element->php('echo '. $varname .';'));
 		}
-		$elements->removeAttr('php:content');
 	}
 
 	// php:replace
@@ -46,7 +45,7 @@ class CandyDefaultCompilers {
 				// }
 			}
 		}
-		$element->removeAttr(array('php:foreach', 'php:while'));
+		$element->removeAttr('php:while');
 	}
 
 	// php:while
@@ -57,7 +56,6 @@ class CandyDefaultCompilers {
 			$element->phpwrapper('while', '(bool)('. $compiler->PHPParse($element->attr('php:while')).')');
 			if ($do_cycle) $element->before($do_cycle);
 		}
-		$elements->removeAttr('php:while');
 	}
 
 	// php:cycle
@@ -76,7 +74,6 @@ class CandyDefaultCompilers {
 				$var_cycle_cnt = '$'.Candy::PRIVATE_VARS_PREFIX.'tmp_'. uniqid();
 				$init_cycle = $element->php($var_cycle_cnt.'=0;'.$var_cycle_vars.'=array('. join(',', $vars) .');');
 				$do_cycle = $element->php('if((int)'.$var_cycle_cnt.'>='.count($vars).')'.$var_cycle_cnt.'=0;'.$results[2][0].'='.$var_cycle_vars.'['.$var_cycle_cnt.'++];');
-				$element->removeAttr('php:cycle');
 				return compact('init_cycle', 'do_cycle');
 			}
 		}
@@ -116,7 +113,6 @@ class CandyDefaultCompilers {
 				}
 			}
 		}
-		$elements->removeAttr('php:attrs');
 	}
 
 	// php:period
@@ -126,7 +122,6 @@ class CandyDefaultCompilers {
 			$element->before($element->php('$'.Candy::PRIVATE_VARS_PREFIX.'period_now=time();$'.Candy::PRIVATE_VARS_PREFIX.'period_start=@strtotime("'.trim($start).'");$'.Candy::PRIVATE_VARS_PREFIX.'period_finish=@strtotime("'.trim($finish).'");'));
 			$element->phpwrapper('if', '(!$'.Candy::PRIVATE_VARS_PREFIX.'period_start || $'.Candy::PRIVATE_VARS_PREFIX.'period_start <= $'.Candy::PRIVATE_VARS_PREFIX.'period_now) && (!$'.Candy::PRIVATE_VARS_PREFIX.'period_finish || $'.Candy::PRIVATE_VARS_PREFIX.'period_finish >= $'.Candy::PRIVATE_VARS_PREFIX.'period_now)');
 		}
-		$elements->removeAttr('php:period');
 	}
 
 	// php:attribute
@@ -138,7 +133,6 @@ class CandyDefaultCompilers {
 				$element->attrPHP($name, 'echo '. $compiler->PHPParse($value) .';');
 			}
 		}
-		$elements->removeAttr('php:'.$name);
 	}
 
 }
