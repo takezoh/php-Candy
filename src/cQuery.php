@@ -16,6 +16,8 @@ class cQuery {
 	protected $contextnode = null;
 	protected $documentElement = null;
 
+	protected $ns = array();
+
 	protected $_root = null;
 	protected $_doctype = null;
 	protected $_content_type = null;
@@ -112,8 +114,38 @@ class cQuery {
 		} else if ($this->_head_exists) {
 			$this->_root = 'head';
 		}
+		// replace namespace
+		$source = preg_replace_callback('/'.sprintf($this->_regexp['open_tag'], '([^\/\!\-\[]\w*)').'/s', array($this, '_cb_element_tags'), $source);
 
 		return $source;
+	}
+
+	function ns_to_dummy($name) {
+		if (preg_match('/^([^:]+):(.*)$/', $name, $matched)) {
+			$ns = trim($matched[1]);
+			if (!in_array($ns, $this->ns)) {
+				$this->ns[] = $ns;
+			}
+			return 'ns-'.$ns.'_'.$matched[2];
+		}
+		return $name;
+	}
+
+	function dummy_to_ns($name) {
+		if (preg_match('/^ns-('.join('|', $this->ns).')_(.*)$/', $name, $matched)) {
+			return $matched[1].':'.$matched[2];
+		}
+		return $name;
+	}
+
+	protected function _cb_element_tags($matched) {
+		$tag = $this->ns_to_dummy($matched[1]);
+		$attr = preg_replace_callback('/([^:]+:[\w\-_]+)\s*=\s*(([\'"]).*?(?<!\\\\)\3)/is', array($this, '_cb_attr'), $matched[2]);
+		return '<'. $tag .' '. $attr .'>';
+	}
+
+	protected function _cb_attr($matched) {
+		return $this->ns_to_dummy($matched[1]) .'='. $matched[2];
 	}
 
 	function saveHTML() {
@@ -177,7 +209,8 @@ class cQuery {
 	}
 
 	protected function _context_attr($matched) {
-		$name = '@'. $matched[1];
+		$name = '@'. $this->ns_to_dummy($matched[1]);
+
 		if (!isset($matched[2])) {
 			return '['.$name.']';
 		}
@@ -282,7 +315,7 @@ class cQuery {
 			// .class
 			$part = preg_replace('/\.((?:[\w\-_]|\\\\.)+)/', '[class~="$1"]', $part);
 			// [attr\S="var"]
-			$part = preg_replace_callback('/\[\s*((?:[\w\-_]|\\\\.)+)\s*(?:(\S?=)\s*(?:([\'"])(.*?)(?<!\\\\)\3)|)\s*\]/', array($this, '_context_attr'), $part);
+			$part = preg_replace_callback('/\[\s*((?:[\w\-_:]|\\\\.)+)\s*(?:(\S?=)\s*(?:([\'"])(.*?)(?<!\\\\)\3)|)\s*\]/', array($this, '_context_attr'), $part);
 			// :contents(text)
 			$part = preg_replace('/:contents\(([\'"])(.*?)(?<!\\\\)\1\)/', '[contains(text(), $1$2$1)]', $part);
 			// :*-child / (index/even/odd/equation)

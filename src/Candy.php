@@ -18,7 +18,6 @@ class Candy {
 	const VERSION = "0.5.0";
 	const PRIVATE_VARS_PREFIX = '__candy_';
 	const USER_FUNC_PREFIX = '__candy_func_';
-	const ATTR_DUMMY_NAME = 'candy-%s_%s';
 
 	private $_defaults = array(
 		'cache.use' => true,

@@ -10,9 +10,6 @@ class candyNodeSet extends cNodeSet {
 	}
 
 	function attr($key, $value=null) {
-		if (is_string($key) && preg_match('/^(\w+):(.*)$/', $key, $matched)) {
-			$key = sprintf(Candy::ATTR_DUMMY_NAME, $matched[1], $matched[2]);
-		}
 		$ret = parent::attr($key, $value);
 		if (is_string($ret) && preg_match('/^%@CANDY:.*%$/', $ret)) {
 			return $this->provider->compiler->get_phpcode($ret);
@@ -25,14 +22,6 @@ class candyNodeSet extends cNodeSet {
 			$value = $this->provider->compiler->add_phpcode($value, 'phpset');
 		}
 		return $this->attr($key, $value);
-	}
-
-	function removeAttr($name) {
-		$name = (array)$name;
-		foreach ($name as &$var) {
-			$var = preg_replace('/^(\w+):(.*)$/', sprintf(Candy::ATTR_DUMMY_NAME, '$1','$2'),  $var);
-		}
-		return parent::removeAttr($name);
 	}
 
 	function php($code) {

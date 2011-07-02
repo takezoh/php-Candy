@@ -67,7 +67,7 @@ class DOMCompiler {
 		$name = trim($matched[2]);
 		if (!empty($matched[1])) {
 			$this->_compile_triggers[] = trim($matched[1]).':'.$name;
-			$name = sprintf(Candy::ATTR_DUMMY_NAME, trim($matched[1]), $name);
+			$name = trim($matched[1]).':'. $name;
 		}
 		$value = $matched[3];
 		$value = preg_replace_callback('/'.$this->_regexp['native_php'].'/', array($this, '_cb_attr_native_php'), $value);

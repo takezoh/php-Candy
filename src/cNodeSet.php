@@ -65,6 +65,7 @@ class cNodeSet implements Iterator {
 			} else {
 				// get
 				if (isset($this->nodeList[0])) {
+					$key = $this->provider->query->ns_to_dummy($key);
 					return $this->nodeList[0]->getAttribute($key);
 				}
 				return null;
@@ -72,6 +73,7 @@ class cNodeSet implements Iterator {
 		}
 		foreach ($this->nodeList as $node) {
 			foreach ($properties as $name => $value) {
+				$name = $this->provider->query->ns_to_dummy($name);
 				$node->setAttribute($name, $value);
 			}
 		}
@@ -80,6 +82,7 @@ class cNodeSet implements Iterator {
 	function removeAttr($name) {
 		foreach ($this->nodeList as $node) {
 			foreach ((array)$name as $attr) {
+				$attr = $this->provider->query->ns_to_dummy($attr);
 				$node->removeAttribute($attr);
 			}
 		}
