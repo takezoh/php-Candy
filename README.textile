@@ -5,6 +5,8 @@ PHP製DOMベーステンプレートエンジン
 * PythonのKidの様に属性値として記述できます。
 * PHPのSmartyの様にファイルを設置しインクルードするだけで使えます。
 * Smartyとの互換モードを実装しているので、既存のSmartyテンプレートを流用できます。
+* jQueryライクなDOM操作でコンパイラの拡張ができます。
+* jQueryライクなCSSセレクタを実装しています。
 
 h2. タグ制御属性
 
@@ -134,16 +136,15 @@ output). <div>Hello World!</div>
 
 h2. テンプレート変数の埋め込み
 
-*${ テンプレートPHP } とすることで、テンプレート内のどこへでも変数を書き出すことができます。*
+*${ 簡易PHP } とすることで、要素の属性値以外の場所へ記述できます。
 <pre><code>
 php). $php = 'hello!';
 html). <div> ${$php} <\div>
 output). <div>hello!<\div>
 </code></pre>
 ※テンプレート関数なども利用可能です。
-※$をエスケープ *\${ PHP }* と書くことでテンプレート処理を対象外にできます。
 
-h2. テンプレートPHP
+h2. 簡易PHP
 
 文字列に引用符を必要としない基本的にPHPの文法です。
 文字の塊を文字列として認識します。
@@ -152,160 +153,14 @@ h2. テンプレートPHP
 h2. Smarty互換モード
 
 クラスインスタンス生成時に下記のパラメータで有効になります。
-*smarty-interchangeable* : Smartyのインスタンス
+*smarty* : Smartyのインスタンス
 <pre><code>
 include('./smarty/Smarty.class.php');
-new PDT(array(
-	"smarty-interchangeable" => new Smarty(),
+new Candy(array(
+	"smarty" => new Smarty(),
 	"cache-use" => true,
 	"cache-directory" => "./cache/",
 	"template-directory" => "./templates/",
 ));
 </code></pre>
 
-h2. PDT::Members
-
-h3. PDT_SimplePhpParser PDT->php_parser
-
-PHPParserインスタンス
-
-h2. PDT::Methods
-
-h3. bool PDT::assign( $name, $value )
-
-*テンプレートに変数を登録します。*
-登録した変数は、テンプレートから、 *"$name"*  で参照できます。
-
-h3. bool PDT::add_compiler( $selector, $callback )
-
-*コンパイル処理時のコンパイラを登録します。*
-$selector: Xpath又は [ *NameSpace : attrName* ] で指定します。
-$callback: コンパイラのコールバック
-*Xpath callback: void callback( $nodeList, $pdt )*
-$nodeList: Xpathで取得したノードリスト
-$pdt: PDTインスタンス
-*NameSpace callback: void callback( $element, $attrValue, $pdt )*
-$element: 対象要素
-$attrValue: 属性値
-$pdt: PDTインスタンス
-
-h3. bool PDT::add_function( $funcName, $callback )
-
-*テンプレート関数を定義します。*
-$funcName: 関数名
-$callback: コールバック関数
-*コールバック: void callback( [$args ...][, $base] )*
-$args: テンプレートからの引数
-$base: $base->call(args...) で関数をoverrideする前の同名テンプレート関数をコールします。
-※PHP5.3.0以上であれば、$base(args...)と記述可能です。
-※グローバルスコープでコール可能な関数は定義せずに利用できます。
-
-h3. void PDT::call( $name, $element, $code )
-
-*php:$name コンパイラをコールする。*
-$name: *foreach*, *while*, *if*, *replace*, *content*, *attrs* から指定します。
-$element: php:$name コンパイラを適用する要素。
-$code: php:$name コンパイラへ渡すPHP文。
-
-h3. DOMText PDT::phpcode( $php_code )
-
-*PHPコードを表現する擬似要素を生成します。*
-※attributeNodeにappendする場合は、PDP::phpcode($php_code)->nodeValue として下さい。
-
-h3. DOMText PDT::phpblock( $block_type )
-
-*PHPBLOCKを表現する擬似要素を生成します。*
-$block_type には、"close" のみ指定できます。
-※attributeNodeにappendする場合は、PDP::phpcode($php_code)->nodeValue として下さい。
-
-h3. DOMNodeList PDT::selector( $xpath )
-
-XPathからDOMNodeListを取得します。
-
-h3. DOMText PDT::text( $text )
-
-文字列ノードを生成します。
-
-h3. DOMElement PDT::element( $tagName, $value, $attributes=array() )
-
-要素ノードを生成します。
-
-h3. DOMAttr PDT::attr( $name, $value )
-
-属性ノードを生成します。
-
-h3. DOMElement PDT::css( $css )
-
-<pre><code>
-<style type="text/css"> $css </style>を生成します。
-</code></pre>
-
-h3. DOMElement PDT::js( $js )
-
-<pre><code>
-<script type="text/javascript"> $js </script>を生成します。
-</code></pre>
-
-h3. DOMElement PDT::nextElement( $node )
-
-$node の後ろに存在する DOMElementオブジェクトを返します。
-
-h3. DOMElement PDT::prevElement( $node )
-
-$node の前に存在する DOMElementオブジェクトを返します。
-
-h3. DOMText PDT::nextText( $node )
-
-$node の後ろに存在する DOMTextオブジェクトを返します。
-
-h3. DOMText PDT::prevText( $node )
-
-$node の前に存在する DOMTextオブジェクトを返します。
-
-h3. bool PDT::before( $newnode, $refnode )
-
-$refnode の前に $newnode を挿入します。
-
-h3. bool PDT::after( $newnode, $refnode )
-
-$refnode の後ろに $newnode を挿入します。
-
-h3. bool PDT::append( $newnode, $refnode )
-
-PDT::push() のエイリアス
-
-h3. bool PDT::push( $newnode, $refnode )
-
-$refnode の子要素の最後に $newnode を追加、又は属性ノードとして追加します。
-
-h3. bool PDT::unshift( $newnode, $refnode )
-
-$refnode の子要素の先頭に $newnode を挿入します。
-
-h3. bool PDT::pop( $node )
-
-$node の最後の子要素を削除します。
-
-h3. bool PDT::shift( $node )
-
-$node の最初の子要素を削除します。
-
-h3. bool PDT::remove( $node )
-
-$node を削除します。
-
-h2. PDT_SimplePhpParser::Methods()
-
-h3. string PDT_SimplePhpParser::parse( $string )
-
-テンプレートPHP（ $string ）を実行可能なPHPへパースする。
-
-h2. PDT_TemplateFunction
-
-h3. mixed PDT_TemplateFunction::call( $args... )
-
-PDT_TemplateFunction::__invoke() へのエイリアス
-
-h3. mixed PDT_TemplateFunction::__invoke( $args... )
-
-上書きした PDT_TemplateFunctionオブジェクトを $args の最後に追加し、登録されたコールバックをコールする。
