@@ -26,6 +26,7 @@ class CandyDefaultCompilers {
 
 	// php:foreach ~ foeachelse
 	function nodelist_compiler_foreach($elements, $compiler) {
+		$else = $elements->_next();
 		foreach ($elements as $element) {
 			if (preg_match('/^(.*?)\s+as\s*(\$[A-Za-z_]\w*)(?:\s*=>\s*(\$[A-Za-z_]\w*))?$/', $element->attr('php:foreach'), $matched)) {
 				$var = $compiler->PHPParse(trim($matched[1]));
@@ -33,19 +34,19 @@ class CandyDefaultCompilers {
 				$val = $matched[3];
 
 				extract((array)$this->node_compiler_cycle($element, $compiler));
-				$wrapper = $element->phpwrapper('if', 'count((array)'.$var.')');
+				$element->phpwrapper('if', 'count((array)'.$var.')');
 				if ($init_cycle) $element->before($init_cycle);
 				$element->phpwrapper('foreach', '(array)'.$var.' as '.$key.($val ? ' => '.$val:''));
 				if ($do_cycle) $element->before($do_cycle);
-
-				// $foreach = $wrapper->_next();
-				// if (!is_null($foreach->attr('php:foreachelse'))) {
-					// $foreach->phpwrapper('else');
-					// $foreach->removeAttr('php:foreachelse');
-				// }
 			}
 		}
-		$element->removeAttr('php:while');
+		foreach ($else as $else) {
+			if (!is_null($else->attr('php:foreachelse'))) {
+				$else->phpwrapper('else');
+			}
+		}
+
+		$elements->removeAttr('php:while');
 	}
 
 	// php:while

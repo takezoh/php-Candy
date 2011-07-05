@@ -15,18 +15,27 @@ class cNodeSet implements Iterator {
 			$this->provider = (object) null;
 		}
 
-		if ($source instanceof DOMNode || $source instanceof DOMNodeList) {
+		if ($source instanceof DOMNode || $source instanceof DOMNodeList || $source instanceof $this->classname) {
 			$source = array($source);
 		}
 		foreach ((array)$source as $node) {
 			if ($node instanceof DOMNode) {
-				if ($node->nodeType === XML_ELEMENT_NODE && !in_array($node, $this->nodeList, true)) {
+				// if ($node->nodeType === XML_ELEMENT_NODE && !in_array($node, $this->nodeList, true)) {
+				if (!in_array($node, $this->nodeList, true)) {
 					$this->nodeList[] = $node;
 				}
 			} else if ($node instanceof DOMNodeList) {
 				foreach ($node as $node) {
-					if ($node->nodeType === XML_ELEMENT_NODE && !in_array($node, $this->nodeList, true)) {
+					// if ($node->nodeType === XML_ELEMENT_NODE && !in_array($node, $this->nodeList, true)) {
+					if (!in_array($node, $this->nodeList, true)) {
 						$this->nodeList[] = $node;
+					}
+				}
+			} else if ($node instanceof $this->classname) {
+				for ($i=0,$len=$node->length; $i<$len; ++$i) {
+					$n = $node->get($i);
+					if (!in_array($n, $this->nodeList, true)) {
+						$this->nodeList[] = $n;
 					}
 				}
 			} else {
@@ -64,7 +73,8 @@ class cNodeSet implements Iterator {
 				$properties =& $key;
 			} else {
 				// get
-				if (isset($this->nodeList[0])) {
+				$key = $this->provider->query->ns_to_dummy($key);
+				if (isset($this->nodeList[0]) && $this->nodeList[0]->hasAttribute($key)) {
 					$key = $this->provider->query->ns_to_dummy($key);
 					return $this->nodeList[0]->getAttribute($key);
 				}
@@ -246,14 +256,14 @@ class cNodeSet implements Iterator {
 		return $this;
 	}
 
-	// function children($selector=null) {
+	function children($selector=null) {
 		// if (!is_null($selector)) {
-			// $ret = $this->xpath->query('./'.$selector, $this->dom);
+			return $this->find('*', 'xpath');
 		// }
-	// }
-	// function contents() {
-		// $ret = $this->xpath->query('./*', $this->dom);
-	// }
+	}
+	function contents() {
+		return $this->find('*|text()', 'xpath');
+	}
 	function each($callback, $provider=null, $options=array()) {
 		if (is_callable($callback)) {
 			foreach ($this->nodeList as $node) {
@@ -263,75 +273,51 @@ class cNodeSet implements Iterator {
 		return $this;
 	}
 
-	function find($selector) {
+	function find($expr, $type='css') {
+		$nodes = array();
+		foreach ($this->nodeList as $node) {
+			$nodes[] = $this->provider->query->query($expr, $node, $type);
+		}
+		return new $this->classname($nodes, $this->provider);
 	}
 	function filter($selector) {
 	}
 	function not($selector) {
 	}
 	function _next($selector=null) {
-		$nodes = array();
-		foreach ($this->nodeList as $node) {
-			while ($node = $node->nextSibling) {
-				if ($node->nodeType === XML_ELEMENT_NODE) {
-					$nodes[] = $node;
-					break;
-				}
-			}
-		}
-		return new $this->classname($nodes, $this->provider);
+		return $this->find('following-sibling::*[position()=1]', 'xpath');
 	}
 	function nextAll($selector=null) {
-		$nodes = array();
-		foreach ($this->nodeList as $node) {
-			while ($node = $node->nextSibling) {
-				if ($node->nodeType === XML_ELEMENT_NODE) {
-					$nodes[] = $node;
-				}
-			}
-		}
-		return new $this->classname($nodes, $this->provider);
+		return $this->find('following-sibling::*', 'xpath');
 	}
 	function parent($selector=null) {
-		$nodes = array();
-		foreach ($this->nodeList as $node) {
-			while ($node = $node->parentNode) {
-				if ($node->nodeType === XML_ELEMENT_NODE) {
-					$nodes[] = $node;
-					break;
-				}
-			}
-		}
-		return new $this->classname($nodes, $this->provider);
+		return $this->find('parent::*', 'xpath');
 	}
 	function parents($selector=null) {
-		$nodes = array();
-		foreach ($this->nodeList as $node) {
-			while ($node = $node->parentNode) {
-				if ($node->nodeType === XML_ELEMENT_NODE) {
-					$nodes[] = $node;
-				}
-			}
-		}
-		return new $this->classname($nodes, $this->provider);
+		return $this->find('ancestor::*', 'xpath');
 	}
 	function siblings($selector=null) {
-		$nodes = array();
-		foreach ($this->nodeList as $node) {
-			foreach (array('previousSibling', 'nextSibling') as $property) {
-				$sibling = $node;
-				while ($sibling = $sibling->{$property}) {
-					if ($sibling->nodeType === XML_ELEMENT_NODE) {
-						$nodes[] = $sibling;
-					}
-				}
-			}
-		}
-		return new $this->classname($nodes, $this->provider);
+		return $this->find('preceding-sibling::*|following-sibling::*', 'xpath');
 	}
 	function html($val=null) {
+		if (is_null($val) && isset($this->nodeList[0])) {
+		}
+		$this->_empty();
+		$this->append($this->_to_dom($val));
 	}
 	function text($val=null) {
+		if (is_null($val)) {
+			$texts = array();
+			if ($text = $this->provider->xpath->query('.//text()')) {
+				foreach ($text as $text) {
+					$texts[] = $text->nodeValue;
+				}
+			}
+			return join('', $texts);
+		}
+		$val = htmlspecialchars($val);
+		$this->_empty();
+		$this->append($this->_to_dom($val));
 	}
 	function val($val=null) {
 	}
@@ -343,6 +329,8 @@ class cNodeSet implements Iterator {
 	}
 
 	function add($selector) {
+		$add = $this->provider->query->query($selector);
+		return new $this->classname(array_merge($this->nodeList, (array)$add), $this->provider);
 	}
 	function eq($index) {
 		return new $this->classname(isset($this->nodeList[$index]) ? $this->nodeList[$index] : null, $this->provider);

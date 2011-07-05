@@ -15,6 +15,7 @@ class candyQuery extends cQuery {
 	protected function _results_nodeset($nodes) {
 		return new candyNodeSet($nodes, (object) array(
 			'dom' => &$this->dom,
+			'xpath' => &$this->xpath,
 			'query' => &$this,
 			'compiler' => &$this->compiler,
 		), $this->expr);

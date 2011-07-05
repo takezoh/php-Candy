@@ -3,13 +3,14 @@
 class cQuery {
 
 	const CHUNKER = '/((?:\((?:\([^()]+\)|[^()]+)+\)|\[(?:\[[^\[\]]*\]|[\'"][^\'"]*[\'"]|[^\[\]\'"]+)+\]|\\\\.|[^ >+~,(\[\\\\]+)+|[>+~])(\s*,\s*)?((?:.|\r|\n)*)/s';
-	const	TAG_REGEXP = '/^((?:[\w\*\-]|\\\\.)+)(.*)?$/';
+	const TAG_REGEXP = '/^((?:[\w\*\-]|\\\\.)+)(.*)?$/';
 
 	protected $_regexp = array(
 		'open_tag' => '<\s*%s(\s+(?:(?:\'.*?(?<!\\\\)\')|(?:".*?(?<!\\\\)")|[^>])*)?>',
 		'close_tag' => '<\s*\/\s*%s\s*>',
 	);
 
+	protected $encoding = 'UTF-8';
 	protected $dom = null;
 	protected $xpath = null;
 	protected $expr = null;
@@ -25,7 +26,8 @@ class cQuery {
 	protected $_head_exists = false;
 	protected $_body_exists = false;
 
-	function __construct($source) {
+	function __construct($source, $encoding='UTF-8') {
+		$this->encoding = strtoupper($encoding);
 		$this->dom = new DOMDocument();
 		$this->dom->preserveWhiteSpace = false;
 		if (@$this->dom->loadHTML($this->_preload(trim($source)))) {
@@ -50,14 +52,17 @@ class cQuery {
 		return $this->query($query);
 	}
 
-	protected function _preload($source, $encoding='UTF-8') {
+	protected function _preload($source) {
 		// remove BOM
 		if ('efbbbf' === strtolower(join('', unpack('H*', substr($source, 0, 3))))) {
 			$source = substr($source, 3);
 		}
+		if ($this->encoding !== 'UTF-8') {
+			$source = mb_convert_encoding($source, 'UTF-8', $this->encoding);
+		}
+
 		$source = preg_replace('/<\!--.*?-->|\t/s', '', $source);
 		$source = preg_replace('/\r\n|\r/s', "\n", trim($source));
-		// $source = mb_convert_encoding($source, 'HTML-ENTITIES', $encoding);
 
 		// get Doctype
 		$this->_doctype = null;
@@ -166,6 +171,9 @@ class cQuery {
 		if ($this->_html_exists && $this->_doctype) {
 			$source = $this->_doctype . $source;
 		}
+		if ($this->encoding !== 'UTF-8') {
+			$source = mb_convert_encoding($source, $this->encoding, 'UTF-8');
+		}
 		return $source;
 	}
 
@@ -183,6 +191,7 @@ class cQuery {
 	protected function _results_nodeset($nodes) {
 		return new cNodeSet($nodes, (object)array(
 			'dom' => &$this->dom,
+			'xpath' => &$this->xpath,
 			'query' => &$this,
 		), $this->expr);
 	}
@@ -336,6 +345,7 @@ class cQuery {
 			if (!empty($m[1])) {
 				$lists = array();
 				foreach ($nodes as $node) {
+					$m[1] = preg_replace('/^\/\//', 'descendant-or-self::', $m[1]);
 					$m[1] = preg_replace('/^\//', './', $m[1]);
 					$m[1] = preg_replace('/^\[/', 'self::*[', $m[1]);
 					$elements = $this->xpath->query($m[1], $node);

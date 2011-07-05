@@ -212,8 +212,8 @@ class cNodeSetTest extends PHPUnit_Framework_TestCase
 		$elements = $this->object->query('div');
 		$parent = $elements->parents();
 		$this->assertEquals($parent->length, 2);
-		$this->assertEquals($parent->get(0)->tagName, 'body');
-		$this->assertEquals($parent->get(1)->tagName, 'html');
+		$this->assertEquals($parent->get(0)->tagName, 'html');
+		$this->assertEquals($parent->get(1)->tagName, 'body');
 	}
 
 	function test_siblings() {
@@ -233,7 +233,7 @@ class cNodeSetTest extends PHPUnit_Framework_TestCase
 			</body></html>
 		');
 
-		$elements = $this->object->query('//*[@class="selected"]');
+		$elements = $this->object->query('*[@class="selected"]');
 		$this->assertEquals($elements->get(0)->nodeValue, 'menu1');
 		$this->assertEquals($elements->get(1)->nodeValue, 'menu5');
 		$this->assertEquals($elements->get(2)->nodeValue, 'menu6');
@@ -246,6 +246,45 @@ class cNodeSetTest extends PHPUnit_Framework_TestCase
 		$this->assertEquals($siblings->get(3)->nodeValue, 'menu6');
 		$this->assertEquals($siblings->get(4)->nodeValue, 'menu7');
 		$this->assertEquals($siblings->get(5)->nodeValue, 'menu5');
+	}
+
+	function test_children() {
+		$html = $this->object->query('html');
+		$children = $html->children();
+		$this->assertEquals($children->length, 2);
+		$this->assertEquals($children->get(0)->tagName, 'head');
+		$this->assertEquals($children->get(1)->tagName, 'body');
+	}
+
+	function test_contents() {
+		$this->object = new cQuery('
+			<html>
+			<body>
+			abcde<span>12345</span>@@@@
+			</body>
+			</html>
+		');
+		$contents = $this->object->query('body')->contents();
+		$this->assertEquals($contents->length, 3);
+		$this->assertEquals($contents->get(0)->nodeType, XML_TEXT_NODE);
+		$this->assertEquals($contents->get(0)->nodeValue, 'abcde');
+		$this->assertEquals($contents->get(1)->nodeType, XML_ELEMENT_NODE);
+		$this->assertEquals($contents->get(1)->tagName, 'span');
+		$this->assertEquals($contents->get(1)->nodeValue, '12345');
+		$this->assertEquals($contents->get(2)->nodeType, XML_TEXT_NODE);
+		$this->assertEquals($contents->get(2)->nodeValue, '@@@@');
+	}
+
+	function test_html() {
+		$this->markTestIncomplete();
+	}
+
+	function test_text() {
+		$this->markTestIncomplete();
+	}
+
+	function test_add() {
+		$this->markTestIncomplete();
 	}
 }
 ?>
