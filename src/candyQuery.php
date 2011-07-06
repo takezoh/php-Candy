@@ -20,5 +20,11 @@ class candyQuery extends cQuery {
 			'compiler' => &$this->compiler,
 		), $this->expr);
 	}
+
+	public function php($code) {
+		$php = $this->dom->createElement('php');
+		$php->appendChild($this->dom->createCDATASection($code));
+		return $php;
+	}
 }
 ?>

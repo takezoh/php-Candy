@@ -92,7 +92,7 @@ class cQueryTest extends PHPUnit_Framework_TestCase {
 		$subject = '<div>test</div>';
 		$source = $reflector->_preload->invoke($this->object, $subject);
 		$this->assertEquals($source, '<html><head><meta http-equiv="content-type" content="text/html; charset=utf8" /></head><body><div>test</div></body></html>');
-		$this->assertEquals($reflector->_root->getValue($this->object), null);
+		$this->assertEquals($reflector->_root->getValue($this->object), 'body');
 		$this->assertEquals($reflector->_doctype->getValue($this->object), null);
 		$this->assertEquals($reflector->_content_type->getValue($this->object), null);
 		$this->assertEquals($reflector->_html_exists->getValue($this->object), 0);
@@ -105,6 +105,12 @@ class cQueryTest extends PHPUnit_Framework_TestCase {
 		// $this->object->query(':even:contains("ads")');
 		// $this->object->query('div:first, div:last');
 		$this->markTestIncomplete();
+	}
+
+	function test_dom() {
+		$nodes = $this->object->dom('<b>hello</b>');
+		$this->assertEquals($nodes->tagName, 'b');
+		$this->assertEquals($nodes->nodeValue, 'hello');
 	}
 
 }

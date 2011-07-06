@@ -11,7 +11,8 @@
  * @version 0.5.0
  */
 
-include(dirname(__FILE__).'/templateFunction.php');
+include(dirname(__FILE__).'/varsHelper.php');
+// include(dirname(__FILE__).'/templateFunction.php');
 
 class Candy {
 
@@ -39,7 +40,7 @@ class Candy {
 	private $_logger = null;
 	private $_externals = array();
 
-	function __construct($config=array(), $_vars=array()) {
+	function __construct($config=array()) {
 		// Make config
 		$this->_get_external_file();
 		$this->_defaults = array_merge($this->_defaults, $config);
@@ -69,11 +70,11 @@ class Candy {
 		// }
 		// Init "Template Functions"
 		$this->_functions = array(
-			self::USER_FUNC_PREFIX.'document' => new TemplateFunction('document', array($this, '_func_document')),
+			// self::USER_FUNC_PREFIX.'document' => new TemplateFunction('document', array($this, '_func_document')),
+			self::USER_FUNC_PREFIX.'document' => array($this, '_func_document'),
 		);
 
-		// extens vars
-		$this->_vars =& $_vars;
+		$this->_vars = new varsHelper();
 	}
 	public function get_template_path($filename) {
 		if (preg_match('/^\//', $filename)) {
@@ -85,9 +86,6 @@ class Candy {
 	}
 	public function get_cachename($template_path) {
 		return str_replace('/', '%', $template_path);
-	}
-	public function get_var($name) {
-		return $this->_vars[$name];
 	}
 	public function fetch($tpl) {
 		$tpl = $this->get_template_path($tpl);
@@ -130,14 +128,14 @@ class Candy {
 				include(dirname(__FILE__).'/candyNodeSet.php');
 				include(dirname(__FILE__).'/candyQuery.php');
 				include(dirname(__FILE__).'/DOMCompiler.php');
-				include(dirname(__FILE__).'/candyDefaultCompiler.php');
+				include(dirname(__FILE__).'/PHPCompilers.php');
 			}
-			$defaultCompilers = new CandyDefaultCompilers();
-			$compiler = new DOMCompiler($this->_config);
+			$phpCompilers = new PHPCompilers();
+			$compiler = new DOMCompiler($this, $this->_config->cache, $this->_config->smarty);
 			foreach (array('period', 'foreach', 'while', 'if', 'replace', 'content', 'attrs', 'cycle', 'foreachelse', 'elseif', 'else') as $phpcompiler) {
-				$compiler->add_compiler('php:'.$phpcompiler, array($defaultCompilers, 'nodelist_compiler_'.$phpcompiler));
+				$compiler->add_compiler('php:'.$phpcompiler, array($phpCompilers, 'nodelist_compiler_'.$phpcompiler));
 			}
-			$compiler->add_compiler('php:*', array($defaultCompilers, 'nodelist_compiler_attribute'));
+			$compiler->add_compiler('php:*', array($phpCompilers, 'nodelist_compiler_attribute'));
 			foreach ($this->_compilers as $user_compiler) {
 				$compiler->add_compiler($user_compiler['selector'], $user_compiler['callback'], $user_compiler['args']);
 			}
@@ -154,7 +152,10 @@ class Candy {
 		if (file_exists($cache)) {
 			$_sandbox = create_function('$'.self::PRIVATE_VARS_PREFIX.'compiled, $'.self::PRIVATE_VARS_PREFIX.'vars, $'.self::PRIVATE_VARS_PREFIX.'functions', '
 				ob_start();
-				extract($'.self::PRIVATE_VARS_PREFIX.'vars);
+				$'.self::PRIVATE_VARS_PREFIX.'vars_export = $'.self::PRIVATE_VARS_PREFIX.'vars->export();
+				foreach ($'.self::PRIVATE_VARS_PREFIX.'vars_export as $'.self::PRIVATE_VARS_PREFIX.'var_key => &$'.self::PRIVATE_VARS_PREFIX.'var) {
+					$$'.self::PRIVATE_VARS_PREFIX.'var_key =& $'.self::PRIVATE_VARS_PREFIX.'var;
+				}
 				extract($'.self::PRIVATE_VARS_PREFIX.'functions);
 				include($'.self::PRIVATE_VARS_PREFIX.'compiled);
 				$'.self::PRIVATE_VARS_PREFIX.'ret = ob_get_contents();
@@ -169,31 +170,6 @@ class Candy {
 	public function display($tpl) {
 		echo $this->fetch($tpl);
 	}
-	public function assign($name, $value) {
-		if ($name && !preg_match('/^'.self::PRIVATE_VARS_PREFIX.'/', $name)) {
-			return $this->_vars[$name] =& $value;
-		}
-		return false;
-	}
-	public function assing_ref($name, &$value) {
-		if ($name && !preg_match('/^'.self::PRIVATE_VARS_PREFIX.'/', $name)) {
-			return $this->_vars[$name] =& $value;
-		}
-		return false;
-	}
-	public function add_compiler($selector, $callback) {
-		$this->_get_external_file();
-		return $this->_compilers[] = compact('selector', 'callback');
-	}
-	public function add_function($name, $function) {
-		$this->_get_external_file();
-		if (is_callable($function) && $name) {
-			$this->_functions[self::USER_FUNC_PREFIX.$name] = new TemplateFunction($name, $function);
-			return true;
-		}
-		return false;
-	}
-
 	private function _get_external_file() {
 		$backtrace = debug_backtrace();
 		$this->_externals[] = $backtrace[1]['file'];
@@ -206,14 +182,38 @@ class Candy {
 		return $externals;
 	}
 
-	function cloneInstance() {
-		return new Candy($this->_defaults, $this->_vars);
+	public function get_var($name) {
+		return $this->_vars->get_var($name);
+	}
+	public function assign($name, $value) {
+		if ($name && !preg_match('/^'.self::PRIVATE_VARS_PREFIX.'/', $name)) {
+			return $this->_vars->assign($name, $value);
+		}
+		return false;
+	}
+	public function assing_ref($name, &$value) {
+		if ($name && !preg_match('/^'.self::PRIVATE_VARS_PREFIX.'/', $name)) {
+			return $this->_vars->assign_ref($name, $value);
+		}
+		return false;
+	}
+	public function add_compiler($selector, $callback) {
+		$this->_get_external_file();
+		return $this->_compilers[] = compact('selector', 'callback');
+	}
+	public function add_function($name, $function) {
+		$this->_get_external_file();
+		if (is_callable($function) && $name) {
+			// $this->_functions[self::USER_FUNC_PREFIX.$name] = new TemplateFunction($name, $function);
+			$this->_functions[self::USER_FUNC_PREFIX.$name] = $function;
+			return true;
+		}
+		return false;
 	}
 
 	function _func_document($file) {
-		$candy = $this->cloneInstance();
 		if (preg_match('/\.(?:tpl|html|htm)$/', $file)) {
-			return $candy->fetch($file);
+			return $this->fetch($file);
 		}
 		ob_start();
 		include($file);

@@ -9,8 +9,9 @@ class simplePhpParserTest extends PHPUnit_Framework_TestCase
 
 	protected function setUp()
 	{
-		$functions = array(SimplePhpParser::USER_FUNC_PREFIX.'document' => array($this, 'publicDummy'));
-		$this->object = new SimplePhpParser(&$functions);
+		// $functions = array(Candy::USER_FUNC_PREFIX.'document' => array($this, 'publicDummy'));
+		// $this->object = new SimplePhpParser(&$functions);
+		$this->object = new SimplePhpParser();
 	}
 
 	protected function tearDown()
@@ -79,11 +80,13 @@ class simplePhpParserTest extends PHPUnit_Framework_TestCase
 	 */
 	function test_user_func() {
 		$php = $this->object->parse('!document()');
-		$this->assertEquals($php, '(isset($'.SimplePhpParser::USER_FUNC_PREFIX.'document)&&method_exists($'.SimplePhpParser::USER_FUNC_PREFIX.'document,\'__invoke\')?!$'.SimplePhpParser::USER_FUNC_PREFIX.'document->__invoke():null)');
+		$this->assertEquals($php, '(isset($'.Candy::USER_FUNC_PREFIX.'document)?!call_user_func($'.Candy::USER_FUNC_PREFIX.'document,$__candy_vars):(is_callable(\'document\')?!document():null))');
 		$php = $this->object->parse('document()');
-		$this->assertEquals($php, '(isset($'.SimplePhpParser::USER_FUNC_PREFIX.'document)&&method_exists($'.SimplePhpParser::USER_FUNC_PREFIX.'document,\'__invoke\')?$'.SimplePhpParser::USER_FUNC_PREFIX.'document->__invoke():null)');
+		$this->assertEquals($php, '(isset($'.Candy::USER_FUNC_PREFIX.'document)?call_user_func($'.Candy::USER_FUNC_PREFIX.'document,$__candy_vars):(is_callable(\'document\')?document():null))');
 		$this->assertEquals(eval('return '. $php .';'), null);
-		${SimplePhpParser::USER_FUNC_PREFIX.'document'} = new TemplateFunction('document', array($this, 'publicDummy'));
+		${Candy::USER_FUNC_PREFIX.'document'} = new TemplateFunction('document', array($this, 'publicDummy'));
+
+		$__candy_vars = null;
 		$this->assertEquals(eval('return '. $php .';'), 'Dummy');
 	}
 
@@ -93,9 +96,9 @@ class simplePhpParserTest extends PHPUnit_Framework_TestCase
 	 */
 	function test_global_func() {
 		$php = $this->object->parse('!each($array)');
-		$this->assertEquals($php, '(!is_callable(\'each\')?null:!each($array))');
+		$this->assertEquals($php, '(isset($'.Candy::USER_FUNC_PREFIX.'each)?!call_user_func($'.Candy::USER_FUNC_PREFIX.'each,$array,$__candy_vars):(is_callable(\'each\')?!each($array):null))');
 		$php = $this->object->parse('each($array)');
-		$this->assertEquals($php, '(!is_callable(\'each\')?null:each($array))');
+		$this->assertEquals($php, '(isset($'.Candy::USER_FUNC_PREFIX.'each)?call_user_func($'.Candy::USER_FUNC_PREFIX.'each,$array,$__candy_vars):(is_callable(\'each\')?each($array):null))');
 		$array = array('key' => 'value');
 		$ret = eval('return '.$php.';');
 		$this->assertEquals($ret, array(0 => 'key', 1 => 'value', 'key' => 'key', 'value' => 'value'));
@@ -109,16 +112,44 @@ class simplePhpParserTest extends PHPUnit_Framework_TestCase
 		$subject = 'document(aaa, document(each($test[b][$c->test($d[c], $c->test())][e]), ccc, $o->b()))';
 		$php = $this->object->parse($subject);
 		$expected = array(
-			'(isset($'.SimplePhpParser::USER_FUNC_PREFIX.'document)&&method_exists($'.SimplePhpParser::USER_FUNC_PREFIX.'document,\'__invoke\')?$'.SimplePhpParser::USER_FUNC_PREFIX.'document->__invoke(',
+			'(isset($__candy_func_document)?',
+				'call_user_func($__candy_func_document,\'aaa\', (isset($__candy_func_document)?',
+					'call_user_func($__candy_func_document,(isset($__candy_func_each)?',
+						'call_user_func($__candy_func_each,$test[\'b\'][$c->test($d[\'c\'], $c->test())][\'e\'],$__candy_vars):',
+					'(is_callable(\'each\')?',
+						'each($test[\'b\'][$c->test($d[\'c\'], $c->test())][\'e\']):null)), ',
+					'\'ccc\', $o->b(),$__candy_vars):(is_callable(\'document\')?',
+						'document((isset($__candy_func_each)?',
+							'call_user_func($__candy_func_each,$test[\'b\'][$c->test($d[\'c\'], $c->test())][\'e\'],$__candy_vars):',
+						'(is_callable(\'each\')?',
+							'each($test[\'b\'][$c->test($d[\'c\'], $c->test())][\'e\']):null)), ',
+						'\'ccc\', $o->b()):null)),',
+					'$__candy_vars):',
+				'(is_callable(\'document\')?',
+					'document(\'aaa\', (isset($__candy_func_document)?',
+						'call_user_func($__candy_func_document,(isset($__candy_func_each)?',
+							'call_user_func($__candy_func_each,$test[\'b\'][$c->test($d[\'c\'], $c->test())][\'e\'],$__candy_vars):',
+						'(is_callable(\'each\')?each($test[\'b\'][$c->test($d[\'c\'], $c->test())][\'e\']):null)), ',
+					'\'ccc\', $o->b(),$__candy_vars):',
+				'(is_callable(\'document\')?',
+					'document((isset($__candy_func_each)?',
+						'call_user_func($__candy_func_each,$test[\'b\'][$c->test($d[\'c\'], $c->test())][\'e\'],$__candy_vars):',
+					'(is_callable(\'each\')?each($test[\'b\'][$c->test($d[\'c\'], $c->test())][\'e\']):null)), ',
+				'\'ccc\', $o->b()):null))',
+			'):null))'
+		);
+
+		/*
+			'(isset($'.Candy::USER_FUNC_PREFIX.'document)&&method_exists($'.Candy::USER_FUNC_PREFIX.'document,\'__invoke\')?$'.Candy::USER_FUNC_PREFIX.'document->__invoke(',
 				'\'aaa\', ',
-				'(isset($'.SimplePhpParser::USER_FUNC_PREFIX.'document)&&method_exists($'.SimplePhpParser::USER_FUNC_PREFIX.'document,\'__invoke\')?$'.SimplePhpParser::USER_FUNC_PREFIX.'document->__invoke(',
+				'(isset($'.Candy::USER_FUNC_PREFIX.'document)&&method_exists($'.Candy::USER_FUNC_PREFIX.'document,\'__invoke\')?$'.Candy::USER_FUNC_PREFIX.'document->__invoke(',
 					'(!is_callable(\'each\')?null:each(',
 						'$test[\'b\'][$c->test($d[\'c\'], $c->test())][\'e\']',
 					')), ',
 					'\'ccc\', $o->b()',
 				'):null)',
 			'):null)',
-		);
+		 */
 		$this->assertEquals($php, join('', $expected));
 	}
 

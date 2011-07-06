@@ -5,6 +5,7 @@ class cNodeSet implements Iterator {
 	protected $classname = __CLASS__;
 	protected $provider = null;
 	protected $nodeList = array();
+	protected $elements = array();
 	protected $length = 0;
 	protected $query = null;
 
@@ -20,13 +21,11 @@ class cNodeSet implements Iterator {
 		}
 		foreach ((array)$source as $node) {
 			if ($node instanceof DOMNode) {
-				// if ($node->nodeType === XML_ELEMENT_NODE && !in_array($node, $this->nodeList, true)) {
 				if (!in_array($node, $this->nodeList, true)) {
 					$this->nodeList[] = $node;
 				}
 			} else if ($node instanceof DOMNodeList) {
 				foreach ($node as $node) {
-					// if ($node->nodeType === XML_ELEMENT_NODE && !in_array($node, $this->nodeList, true)) {
 					if (!in_array($node, $this->nodeList, true)) {
 						$this->nodeList[] = $node;
 					}
@@ -40,6 +39,11 @@ class cNodeSet implements Iterator {
 				}
 			} else {
 				break;
+			}
+		}
+		foreach ($this->nodeList as &$node) {
+			if ($node->nodeType === XML_ELEMENT_NODE) {
+				$this->elements[] =& $node;
 			}
 		}
 		$this->length = count($this->nodeList);
@@ -65,6 +69,10 @@ class cNodeSet implements Iterator {
 		}
 	}
 
+	protected function _new_nodeset($nodes) {
+		return new $this->classname($nodes, $this->provider);
+	}
+
 	function attr($key, $value=null) {
 		if (!is_null($value)) {
 			$properties = array($key => $value);
@@ -74,14 +82,14 @@ class cNodeSet implements Iterator {
 			} else {
 				// get
 				$key = $this->provider->query->ns_to_dummy($key);
-				if (isset($this->nodeList[0]) && $this->nodeList[0]->hasAttribute($key)) {
+				if (isset($this->elements[0]) && $this->elements[0]->hasAttribute($key)) {
 					$key = $this->provider->query->ns_to_dummy($key);
-					return $this->nodeList[0]->getAttribute($key);
+					return $this->elements[0]->getAttribute($key);
 				}
 				return null;
 			}
 		}
-		foreach ($this->nodeList as $node) {
+		foreach ($this->elements as $node) {
 			foreach ($properties as $name => $value) {
 				$name = $this->provider->query->ns_to_dummy($name);
 				$node->setAttribute($name, $value);
@@ -90,7 +98,7 @@ class cNodeSet implements Iterator {
 		return $this;
 	}
 	function removeAttr($name) {
-		foreach ($this->nodeList as $node) {
+		foreach ($this->elements as $node) {
 			foreach ((array)$name as $attr) {
 				$attr = $this->provider->query->ns_to_dummy($attr);
 				$node->removeAttribute($attr);
@@ -122,8 +130,8 @@ class cNodeSet implements Iterator {
 		if (is_null($value)) {
 			if (is_string($key)) {
 				// get
-				if (isset($this->nodeList[0])) {
-					$style = $this->_css_to_array($this->nodeList[0]->getAttribute('style'));
+				if (isset($this->elements[0])) {
+					$style = $this->_css_to_array($this->elements[0]->getAttribute('style'));
 					return $style[$key];
 				}
 				return null;
@@ -135,7 +143,7 @@ class cNodeSet implements Iterator {
 		if (is_string($key)) {
 			$style = array($key => $value);
 		}
-		foreach ($this->nodeList as $node) {
+		foreach ($this->elements as $node) {
 			$oldstyle = $this->_css_to_array($node->getAttribute('style'));
 			$newstyle = array_merge($oldstyle, $style);
 			$node->setAttribute('style', $this->_css_to_string($newstyle));
@@ -144,7 +152,7 @@ class cNodeSet implements Iterator {
 	}
 
 	function addClass($name) {
-		foreach ($this->nodeList as $node) {
+		foreach ($this->elements as $node) {
 			$class = $node->getAttribute('class');
 			$class = preg_split('/\s+/', $class);
 			$class = array_merge($class, (array)$name);
@@ -160,7 +168,7 @@ class cNodeSet implements Iterator {
 		return in_array($name, $class);
 	}
 	function removeClass($name) {
-		foreach ($this->nodeList as $node) {
+		foreach ($this->elements as $node) {
 			$class = $node->getAttribute('class');
 			$class = preg_split('/\s+/', $class);
 			foreach ((array)$name as $name) {
@@ -172,86 +180,75 @@ class cNodeSet implements Iterator {
 		}
 	}
 
-	protected function _to_dom($contents) {
-		$ret = array();
-		if (is_string($contents)) {
-			$dom = new DOMDocument();
-			$dom->loadHTML('<html><body>'.$contents.'</body></html>');
-			foreach ($dom->documentElement->firstChild->childNodes as $node) {
-				$ret[] = $this->provider->dom->importNode($node, true);
-			}
-			return $ret;
-		}
-		if ($contents instanceof DOMNodeList) {
-			for ($i=0,$len=$contents->length; $i<$len; ++$i) {
-				$ret[] = &$contents->item($i);
-			}
-			return $ret;
-		}
-		if ($contents instanceof DOMNode) {
-			return array($contents);
-		}
-		if ($contents instanceof $this->classname) {
-			return $contents->nodeList;
-		}
-		return array();
-	}
-
 	function append($contents) {
-		$contents = $this->_to_dom($contents);
-		foreach ($this->nodeList as $node) {
+		$contents = $this->provider->query->dom($contents);
+		foreach ($this->elements as $node) {
 			foreach ($contents as $content) {
 				$new = $content->cloneNode(true);
 				$node->appendChild($new);
 			}
 		}
+		$contents->remove();
 		return $this;
 	}
 	function before($contents) {
-		$contents = $this->_to_dom($contents);
-		foreach ($this->nodeList as $node) {
-			foreach ($contents as $content) {
-				$new = $content->cloneNode(true);
-				$node->parentNode->insertBefore($new, $node);
-			}
-		}
-		return $this;
-	}
-	function after($contents) {
-		$contents = $this->_to_dom($contents);
-		foreach ($this->nodeList as $node) {
-			foreach ($contents as $content) {
-				$new = $content->cloneNode(true);
-				if ($ref = $node->nextSibling) {
-					$node->parentNode->insertBefore($new, $ref);
-				} else {
-					$node->parentNode->appendChild($new);
+		$contents = $this->provider->query->dom($contents);
+		foreach ($this->elements as $node) {
+			if ($node->parentNode) {
+				foreach ($contents as $content) {
+					$new = $content->cloneNode(true);
+					$node->parentNode->insertBefore($new, $node);
 				}
 			}
 		}
+		$contents->remove();
+		return $this;
+	}
+	function after($contents) {
+		$contents = $this->provider->query->dom($contents);
+		foreach ($this->elements as $node) {
+			if ($node->parentNode) {
+				foreach ($contents as $content) {
+					$new = $content->cloneNode(true);
+					if ($ref = $node->nextSibling) {
+						$node->parentNode->insertBefore($new, $ref);
+					} else {
+						$node->parentNode->appendChild($new);
+					}
+				}
+			}
+		}
+		$contents->remove();
 		return $this;
 	}
 	function replace($contents) {
-		$contents = $this->_to_dom($contents);
+		$contents = $this->provider->query->dom($contents);
 		foreach ($this->nodeList as &$node) {
-			foreach ($contents as $content) {
-				$new = $content->cloneNode(true);
-				$node->parentNode->insertBefore($new, $node);
+			if ($node->parentNode) {
+				foreach ($contents as $content) {
+					$new = $content->cloneNode(true);
+					$node->parentNode->insertBefore($new, $node);
+				}
+				$node->parentNode->removeChild($node);
 			}
-			$node->parentNode->removeChild($node);
 		}
+		$contents->remove();
 	}
 	function remove($selector=null) {
-		foreach ($this->nodeList as $node) {
-			$node->parentNode->removeChild($node);
+		foreach ($this->nodeList as &$node) {
+			if ($node->parentNode) {
+				$node = $node->parentNode->removeChild($node);
+			}
 		}
 		return $this;
 	}
 	function _empty() {
 		foreach ($this->nodeList as &$node) {
-			$new = $node->cloneNode(false);
-			$node->parentNode->replaceChild($new, $node);
-			$node = $new;
+			if ($node->parentNode) {
+				$new = $node->cloneNode(false);
+				$node->parentNode->replaceChild($new, $node);
+				$node = $new;
+			}
 		}
 		return $this;
 	}
@@ -278,7 +275,7 @@ class cNodeSet implements Iterator {
 		foreach ($this->nodeList as $node) {
 			$nodes[] = $this->provider->query->query($expr, $node, $type);
 		}
-		return new $this->classname($nodes, $this->provider);
+		return $this->_new_nodeset($nodes);
 	}
 	function filter($selector) {
 	}
@@ -300,10 +297,10 @@ class cNodeSet implements Iterator {
 		return $this->find('preceding-sibling::*|following-sibling::*', 'xpath');
 	}
 	function html($val=null) {
-		if (is_null($val) && isset($this->nodeList[0])) {
+		if (is_null($val) && isset($this->elements[0])) {
 		}
 		$this->_empty();
-		$this->append($this->_to_dom($val));
+		$this->append($this->provider->query->dom($val));
 	}
 	function text($val=null) {
 		if (is_null($val)) {
@@ -317,7 +314,7 @@ class cNodeSet implements Iterator {
 		}
 		$val = htmlspecialchars($val);
 		$this->_empty();
-		$this->append($this->_to_dom($val));
+		$this->append($this->provider->query->dom($val));
 	}
 	function val($val=null) {
 	}
@@ -329,11 +326,11 @@ class cNodeSet implements Iterator {
 	}
 
 	function add($selector) {
-		$add = $this->provider->query->query($selector);
-		return new $this->classname(array_merge($this->nodeList, (array)$add), $this->provider);
+		$add = $this->provider->query->dom($selector);
+		return $this->_new_nodeset(array_merge($this->nodeList, (array)$add));
 	}
 	function eq($index) {
-		return new $this->classname(isset($this->nodeList[$index]) ? $this->nodeList[$index] : null, $this->provider);
+		return $this->_new_nodeset(isset($this->nodeList[$index]) ? $this->nodeList[$index] : null);
 	}
 	function get($index=null) {
 		if (is_null($index)) {
@@ -357,13 +354,13 @@ class cNodeSet implements Iterator {
 				$nodes = array_slice($this->nodeList, $start, $end - $start);
 			}
 		}
-		return new $this->classname($nodes, $this->provider);
+		return $this->_new_nodeset($nodes);
 	}
 
 
 	// Iterator
 	function rewind() { $this->_iter_ = 0; }
-	function current() { return new $this->classname($this->nodeList[$this->_iter_], $this->provider); }
+	function current() { return $this->_new_nodeset($this->nodeList[$this->_iter_]); }
 	function key() { return $this->_iter_; }
 	function next() { ++$this->_iter_; }
 	function valid() { return isset($this->nodeList[$this->_iter_]); }

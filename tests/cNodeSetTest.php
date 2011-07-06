@@ -86,17 +86,6 @@ class cNodeSetTest extends PHPUnit_Framework_TestCase
 		$this->assertEquals($elements->hasClass('class'), false);
 	}
 
-	function test_to_dom() {
-		$to_dom = new ReflectionMethod('cNodeSet', '_to_dom');
-		$to_dom->setAccessible(true);
-		$nodes = $to_dom->invoke(new cNodeset(null, (object)array('dom'=>new DOMDocument())), '<b>hello</b>');
-		$this->assertEquals($nodes[0]->tagName, 'b');
-		$this->assertEquals($nodes[0]->nodeValue, 'hello');
-	}
-
-	/**
-	 * @depends test_to_dom
-	 */
 	function test_append() {
 		$elements = $this->object->query('div');
 		$elements->append('<b>hello</b>');
@@ -111,9 +100,6 @@ class cNodeSetTest extends PHPUnit_Framework_TestCase
 		$this->assertEquals($source, join('', $ret));
 	}
 
-	/**
-	 * @depends test_to_dom
-	 */
 	function test_before() {
 		$elements = $this->object->query('div');
 		$elements->before('<b>hello</b>');
@@ -128,9 +114,6 @@ class cNodeSetTest extends PHPUnit_Framework_TestCase
 		$this->assertEquals($source, join('', $ret));
 	}
 
-	/**
-	 * @depends test_to_dom
-	 */
 	function test_after() {
 		$elements = $this->object->query('div');
 		$elements->after('<b>hello</b>');
@@ -146,9 +129,6 @@ class cNodeSetTest extends PHPUnit_Framework_TestCase
 		$this->assertEquals($source, join('', $ret));
 	}
 
-	/**
-	 * @depends test_to_dom
-	 */
 	function test_replace() {
 		$elements = $this->object->query('div');
 		$elements->replace('<b>hello</b>');

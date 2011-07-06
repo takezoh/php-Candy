@@ -2,13 +2,16 @@
 
 class DOMCompiler {
 
-	protected $_config = null;
 	protected $_regexp = array(
 		'open_tag' => '<\s*%s(\s+(?:(?:\'.*?(?<!\\\\)\')|(?:".*?(?<!\\\\)")|[^>])*)?>',
 		'simple_php' => '(?<!\\\\)\${((?:(?:([\'"]).*?(?<!\\\\)\2)|[^}])*)}',
 		'simple_php_escaped' => '\\\\(\${(?:(?:([\'"]).*?(?<!\\\\)\2)|[^}])*})',
 		'native_php' => '<\?php\s*((?:([\'"]).*?(?<!\\\\)\2|.)*?)\s*\?>',
 	);
+
+	public $vars = null;
+	protected $cache_conf = null;
+	protected $smarty = null;
 
 	protected $_query = null;
 	protected $_php_parser = null;
@@ -19,8 +22,10 @@ class DOMCompiler {
 	protected $_smarty_exclude = array();
 	protected $_smarty_header = null;
 
-	function __construct($config) {
-		$this->_config = $config;
+	function __construct(&$vars, $cache_conf, &$smarty=null) {
+		$this->vars = $vars;
+		$this->cache_conf = $cache_conf;
+		$this->smarty = $smarty;
 		$this->_php_parser = new SimplePhpParser();
 	}
 
@@ -39,8 +44,8 @@ class DOMCompiler {
 		// escaped simple php code
 		$source = preg_replace_callback('/'.$this->_regexp['simple_php_escaped'].'/s', array($this, '_cb_simple_php_escaped'), $source);
 		// Smarty interchangeable
-		if (isset($this->_config->smarty) && $this->_config->smarty instanceof Smarty) {
-			$source = $this->_smarty_interchangeable($this->_config->smarty, $source);
+		if (isset($this->smarty) && $this->smarty instanceof Smarty) {
+			$source = $this->_smarty_interchangeable($this->smarty, $source);
 		}
 		return $source;
 	}
@@ -132,9 +137,9 @@ class DOMCompiler {
 		// $source = preg_replace_callback('/'.$this->_regexp['simple_php_escaped'].'/s', array($this, '_cb_smarty_exclude'), $source);
 		$source = preg_replace_callback('/<\s*a\s+(.*?)href\s*=\s*([\'"])\s*(javascript\s*:.*?)(?<!\\\\)\2([^>]*)>/is', array($this, '_cb_smarty_exclude'), $source);
 		// mainprocess: Smarty compile resource
-		$resource = $this->_config->cache->directory.'/'.uniqid();
+		$resource = $this->cache_conf->directory.'/'.uniqid();
 		file_put_contents($resource, $source);
-		$smarty->compile_dir = $this->_config->cache->directory;
+		$smarty->compile_dir = $this->cache_conf->directory;
 		$smarty->_compile_resource($resource, $resource);
 		if (preg_match('/^\s*<\?php\s*\/\*\s*(.*?)\s*\*\/\s*\?>(.*)$/si', file_get_contents($resource), $matched)) {
 			$this->_smarty_header = $matched[1];
@@ -174,6 +179,7 @@ class DOMCompiler {
 
 		foreach (array_unique($this->_compile_triggers) as $expr) {
 			$is_nscompiler = false;
+			$ns = $name = null;
 			if (preg_match('/^(\w+):([\w\*\-]+)$/', $expr, $matched)) {
 				$ns = $matched[1];
 				$name = $matched[2];
@@ -216,6 +222,28 @@ class DOMCompiler {
 		if (!is_null($this->_query)) {
 			return $this->_query->query($expr, $contextnode, $type);
 		}
+	}
+
+	// dom creator
+	public function dom($html) {
+		if (!is_null($this->_query)) {
+			return $this->_query->dom($html);
+		}
+	}
+	public function php($code) {
+		if (!is_null($this->_query)) {
+			return $this->_query->php($code);
+		}
+	}
+
+	public function do_compiler($name, $elements) {
+		if ($elements && $elements->length > 0 && isset($this->_compilers[$name]) && is_callable($this->_compilers[$name])) {
+			call_user_func($this->_compilers[$name], $elements, $this);
+		}
+	}
+
+	public function func($name, $args_str) {
+		return $this->_php_parser->parse($name . '('. $args_str .')');
 	}
 }
 

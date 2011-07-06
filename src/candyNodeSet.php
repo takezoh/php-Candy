@@ -24,12 +24,6 @@ class candyNodeSet extends cNodeSet {
 		return $this->attr($key, $value);
 	}
 
-	function php($code) {
-		$php = $this->provider->dom->createElement('php');
-		$php->appendChild($this->provider->dom->createCDATASection($code));
-		return $php;
-	}
-
 	function phpwrapper($type, $eval=null) {
 		$wrappers = array();
 		$wrapper = $this->provider->dom->createElement('phpblock');
@@ -45,6 +39,17 @@ class candyNodeSet extends cNodeSet {
 		return new $this->classname($wrappers, $this->provider);
 	}
 
+	function php($code=null) {
+		if (!is_null($code) && isset($this->elements[0])) {
+			return $this->elements[0]->nodeValue;
+		}
+		$this->_empty();
+		$this->append($this->provider->dom->createCDATASection($code));
+	}
+
+	function bind($compiler_name) {
+		$this->provider->compiler->do_compiler($compiler_name, $this);
+	}
 }
 
 ?>
