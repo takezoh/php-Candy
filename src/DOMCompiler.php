@@ -89,13 +89,15 @@ class DOMCompiler {
 	}
 	protected function _cb_native_php($matched) {
 		if (!empty($matched[1])) {
-			return '<php><![CDATA['. $matched[1] .']]></php>';
+			// return '<php><![CDATA['. $matched[1] .']]></php>';
+			return '<php>'. $this->add_phpcode($matched[1]) .'</php>';
 		}
 		return null;
 	}
 	protected function _cb_simple_php($matched) {
 		if (!empty($matched[1])) {
-			return '<php><![CDATA[echo '. $this->_php_parser->parse($matched[1]) .';]]></php>';
+			// return '<php><![CDATA[echo '. $this->_php_parser->parse($matched[1]) .';]]></php>';
+			return '<php>'. $this->add_phpcode('echo '. $this->_php_parser->parse($matched[1]) .';') .'</php>';
 		}
 		return null;
 	}
@@ -165,6 +167,10 @@ class DOMCompiler {
 	// compiler
 	public function compile($source) {
 		$this->_query = new candyQuery($this->_preload(trim($source)), $this);
+
+		foreach ($this->_query->query('php') as $php) {
+			$php->nodeValue = $this->get_phpcode($php->nodeValue);
+		}
 
 		foreach (array_unique($this->_compile_triggers) as $expr) {
 			$is_nscompiler = false;

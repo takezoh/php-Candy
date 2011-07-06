@@ -145,7 +145,7 @@ class cQuery {
 
 	protected function _cb_element_tags($matched) {
 		$tag = $this->ns_to_dummy($matched[1]);
-		$attr = preg_replace_callback('/([^:]+:[\w\-_]+)\s*=\s*(([\'"]).*?(?<!\\\\)\3)/is', array($this, '_cb_attr'), $matched[2]);
+		$attr = preg_replace_callback('/([^:\s]+:[\w\-_]+)\s*=\s*(([\'"]).*?(?<!\\\\)\3)/is', array($this, '_cb_attr'), $matched[2]);
 		return '<'. $tag .' '. $attr .'>';
 	}
 
