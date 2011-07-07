@@ -9,7 +9,7 @@ class varsHelper {
 		return $this->assign($key, $value);
 	}
 
-	function __get($key) {
+	function &__get($key) {
 		return $this->get_var($key);
 	}
 
@@ -29,9 +29,9 @@ class varsHelper {
 		return $this->refs[$name];
 	}
 
-	function get_var($name) {
-		if (isset($this->vars[$name])) {
-			return $this->vars[$name];
+	function &get_var($name) {
+		if (isset($this->refs[$name])) {
+			return $this->refs[$name];
 		}
 		return false;
 	}

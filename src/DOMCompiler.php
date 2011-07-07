@@ -197,9 +197,7 @@ class DOMCompiler {
 				$expr = '*['. $ns .':'. $name .']';
 			}
 			$elements = $this->_query->query($expr);
-			if (is_callable($compiler) && $elements->length) {
-				call_user_func($compiler, $elements, $this);
-			}
+			$this->do_compiler($compiler, $elements);
 			if ($is_nscompiler) {
 				$elements->removeAttr($ns.':'.$name);
 			}
@@ -225,9 +223,9 @@ class DOMCompiler {
 	}
 
 	// dom creator
-	public function dom($html) {
+	public function create($html) {
 		if (!is_null($this->_query)) {
-			return $this->_query->dom($html);
+			return $this->_query->create($html);
 		}
 	}
 	public function php($code) {
@@ -236,14 +234,19 @@ class DOMCompiler {
 		}
 	}
 
-	public function do_compiler($name, $elements) {
-		if ($elements && $elements->length > 0 && isset($this->_compilers[$name]) && is_callable($this->_compilers[$name])) {
-			call_user_func($this->_compilers[$name], $elements, $this);
+	public function do_compiler($compiler, $elements) {
+		if ($elements && $elements->length > 0) {
+			if (is_string($compiler) && isset($this->_compilers[$compiler])) {
+				$compiler = $this->_compilers[$compiler];
+			}
+			if (is_callable($compiler)) {
+				call_user_func($compiler, $elements, $this);
+			}
 		}
 	}
 
-	public function func($name, $args_str) {
-		return $this->_php_parser->parse($name . '('. $args_str .')');
+	public function func($name, $args_str=null) {
+		return $this->_query->php('echo '. $this->_php_parser->parse($name . '('. $args_str .')') .';');
 	}
 }
 

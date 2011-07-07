@@ -150,7 +150,7 @@ class Candy {
 		}
 		// include compiled cache!!
 		if (file_exists($cache)) {
-			$_sandbox = create_function('$'.self::PRIVATE_VARS_PREFIX.'compiled, $'.self::PRIVATE_VARS_PREFIX.'vars, $'.self::PRIVATE_VARS_PREFIX.'functions', '
+			$_sandbox = create_function('$'.self::PRIVATE_VARS_PREFIX.'compiled, &$'.self::PRIVATE_VARS_PREFIX.'vars, $'.self::PRIVATE_VARS_PREFIX.'functions', '
 				ob_start();
 				$'.self::PRIVATE_VARS_PREFIX.'vars_export = $'.self::PRIVATE_VARS_PREFIX.'vars->export();
 				foreach ($'.self::PRIVATE_VARS_PREFIX.'vars_export as $'.self::PRIVATE_VARS_PREFIX.'var_key => &$'.self::PRIVATE_VARS_PREFIX.'var) {

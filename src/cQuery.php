@@ -184,7 +184,7 @@ class cQuery {
 		return $source;
 	}
 
-	function &dom($contents) {
+	function &create($contents) {
 		$ret = array();
 		if (is_string($contents)) {
 			$dom = new DOMDocument();

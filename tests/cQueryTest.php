@@ -107,8 +107,8 @@ class cQueryTest extends PHPUnit_Framework_TestCase {
 		$this->markTestIncomplete();
 	}
 
-	function test_dom() {
-		$nodes = $this->object->dom('<b>hello</b>');
+	function test_create() {
+		$nodes = $this->object->create('<b>hello</b>');
 		$this->assertEquals($nodes->tagName, 'b');
 		$this->assertEquals($nodes->nodeValue, 'hello');
 	}

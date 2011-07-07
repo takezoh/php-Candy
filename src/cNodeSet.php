@@ -190,7 +190,7 @@ class cNodeSet implements Iterator {
 
 	function append($contents) {
 		$nodes = array();
-		$contents = $this->provider->query->dom($contents);
+		$contents = $this->provider->query->create($contents);
 		foreach ($this->elements as $node) {
 			for ($i=0; $i<$contents->length; ++$i) {
 				$new = $contents->get($i)->cloneNode(true);
@@ -203,7 +203,7 @@ class cNodeSet implements Iterator {
 	}
 	function before($contents) {
 		$nodes = array();
-		$contents = $this->provider->query->dom($contents);
+		$contents = $this->provider->query->create($contents);
 		foreach ($this->elements as $node) {
 			if ($node->parentNode) {
 				for ($i=0; $i<$contents->length; ++$i) {
@@ -218,7 +218,7 @@ class cNodeSet implements Iterator {
 	}
 	function after($contents) {
 		$nodes = array();
-		$contents = $this->provider->query->dom($contents);
+		$contents = $this->provider->query->create($contents);
 		foreach ($this->elements as $node) {
 			if ($node->parentNode) {
 				for ($i=0; $i<$contents->length; ++$i) {
@@ -237,7 +237,7 @@ class cNodeSet implements Iterator {
 	}
 	function replace($contents) {
 		$nodes = array();
-		$contents = $this->provider->query->dom($contents);
+		$contents = $this->provider->query->create($contents);
 		foreach ($this->nodeList as &$node) {
 			if ($node->parentNode) {
 				for ($i=0; $i<$contents->length; ++$i) {
@@ -346,7 +346,7 @@ class cNodeSet implements Iterator {
 			return join('', $html);
 		}
 		$this->_empty();
-		$this->append($this->provider->query->dom($val));
+		$this->append($this->provider->query->create($val));
 	}
 	function text($val=null) {
 		if (is_null($val)) {
@@ -362,7 +362,7 @@ class cNodeSet implements Iterator {
 		}
 		$val = htmlspecialchars($val);
 		$this->_empty();
-		$this->append($this->provider->query->dom($val));
+		$this->append($this->provider->query->create($val));
 	}
 	function val($val=null) {
 		if (is_null($val)) {
@@ -386,7 +386,7 @@ class cNodeSet implements Iterator {
 	}
 
 	function add($selector) {
-		$add = $this->provider->query->dom($selector);
+		$add = $this->provider->query->query($selector);
 		return $this->_new_nodeset(array_merge($this->nodeList, (array)$add));
 	}
 	function eq($index) {
