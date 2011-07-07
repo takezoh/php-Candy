@@ -50,6 +50,10 @@ class candyNodeSet extends cNodeSet {
 	function bind($compiler_name) {
 		$this->provider->compiler->do_compiler($compiler_name, $this);
 	}
+
+	function html($val=null) {
+		return preg_replace_callback('/%@CANDY:[^%]+%/', array($this->provider->compiler, 'get_phpcode'), parent::html($val));
+	}
 }
 
 ?>

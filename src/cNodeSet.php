@@ -56,7 +56,11 @@ class cNodeSet implements Iterator {
 			return $this->query;
 		default:
 			if (isset($this->nodeList[0])) {
-				return $this->nodeList[0]->{$key};
+				$ret = $this->nodeList[0]->{$key};
+				if ($ret instanceof DOMNode || $ret instanceof DOMNodeList) {
+					return $this->_new_nodeset($ret);
+				}
+				return $ret;
 			}
 		}
 		return null;
@@ -64,12 +68,17 @@ class cNodeSet implements Iterator {
 
 	function __call($method, $args) {
 		if (isset($this->nodeList[0])) {
-			return call_user_func_array(array($this->nodeList[0], $method), $args);
+			$ret = call_user_func_array(array($this->nodeList[0], $method), $args);
+			if ($ret instanceof DOMNode || $ret instanceof DOMNodeList) {
+				return $this->_new_nodeset($ret);
+			}
+			return $ret;
 		}
 	}
 
-	protected function _new_nodeset($nodes) {
-		return new $this->classname($nodes, $this->provider);
+	protected function &_new_nodeset($nodes) {
+		$nodeset = new $this->classname($nodes, $this->provider);
+		return $nodeset;
 	}
 
 	function attr($key, $value=null) {
@@ -183,8 +192,8 @@ class cNodeSet implements Iterator {
 		$nodes = array();
 		$contents = $this->provider->query->dom($contents);
 		foreach ($this->elements as $node) {
-			foreach ($contents as $content) {
-				$new = $content->cloneNode(true);
+			for ($i=0; $i<$contents->length; ++$i) {
+				$new = $contents->get($i)->cloneNode(true);
 				$nodes[] = $node->appendChild($new);
 			}
 		}
@@ -197,8 +206,8 @@ class cNodeSet implements Iterator {
 		$contents = $this->provider->query->dom($contents);
 		foreach ($this->elements as $node) {
 			if ($node->parentNode) {
-				foreach ($contents as $content) {
-					$new = $content->cloneNode(true);
+				for ($i=0; $i<$contents->length; ++$i) {
+					$new = $contents->get($i)->cloneNode(true);
 					$nodes[] = $node->parentNode->insertBefore($new, $node);
 				}
 			}
@@ -212,8 +221,8 @@ class cNodeSet implements Iterator {
 		$contents = $this->provider->query->dom($contents);
 		foreach ($this->elements as $node) {
 			if ($node->parentNode) {
-				foreach ($contents as $content) {
-					$new = $content->cloneNode(true);
+				for ($i=0; $i<$contents->length; ++$i) {
+					$new = $contents->get($i)->cloneNode(true);
 					if ($ref = $node->nextSibling) {
 						$nodes[] = $node->parentNode->insertBefore($new, $ref);
 					} else {
@@ -231,8 +240,8 @@ class cNodeSet implements Iterator {
 		$contents = $this->provider->query->dom($contents);
 		foreach ($this->nodeList as &$node) {
 			if ($node->parentNode) {
-				foreach ($contents as $content) {
-					$new = $content->cloneNode(true);
+				for ($i=0; $i<$contents->length; ++$i) {
+					$new = $contents->get($i)->cloneNode(true);
 					$nodes[] = $node->parentNode->insertBefore($new, $node);
 				}
 				$node->parentNode->removeChild($node);
@@ -305,7 +314,36 @@ class cNodeSet implements Iterator {
 		return $this->find('preceding-sibling::*|following-sibling::*', 'xpath');
 	}
 	function html($val=null) {
-		if (is_null($val) && isset($this->elements[0])) {
+		if (is_null($val)) {
+			$html = array();
+			foreach ($this->nodeList as $node) {
+				if ($node->nodeType === XML_ELEMENT_NODE) {
+					$tag = $node->tagName;
+					$attrs = array();
+					foreach ($node->attributes as $attr) {
+						$aname = $attr->name;
+						$aval = $attr->value;
+						if (!empty($aval)) {
+							$attrs[] = $aname .'="'. $aval .'"';
+						} else {
+							$attrs[] = $aname;
+						}
+					}
+					if ($attrs = join(' ', $attrs)) {
+						$attrs = ' '. $attrs;
+					}
+					if (in_array($tag, (array)$this->provider->query->standalone)) {
+						$html[] = '<'.$tag . $attrs.' />';
+					} else {
+						$html[] = '<'.$tag . $attrs.'>';
+						$html = array_merge($html, (array)$this->_new_nodeset($node->childNodes)->html());
+						$html[] = '</'.$tag.'>';
+					}
+				} else {
+					$html[] = $node->nodeValue;
+				}
+			}
+			return join('', $html);
 		}
 		$this->_empty();
 		$this->append($this->provider->query->dom($val));
@@ -313,18 +351,32 @@ class cNodeSet implements Iterator {
 	function text($val=null) {
 		if (is_null($val)) {
 			$texts = array();
-			if ($text = $this->provider->xpath->query('.//text()')) {
-				foreach ($text as $text) {
-					$texts[] = $text->nodeValue;
+			foreach ($this->nodeList as $node) {
+				if ($text = $this->provider->xpath->query('descendant-or-self::text()', $node)) {
+					foreach ($text as $text) {
+						$texts[] = $text->nodeValue;
+					}
 				}
 			}
-			return join('', $texts);
+			return join(' ', $texts);
 		}
 		$val = htmlspecialchars($val);
 		$this->_empty();
 		$this->append($this->provider->query->dom($val));
 	}
 	function val($val=null) {
+		if (is_null($val)) {
+			$vals = array();
+			foreach ($this->elements as $node) {
+				if ($node->hasAttribute('value')) {
+					$vals[] = $node->getAttribute('value');
+				}
+			}
+			return $vals;
+		}
+		foreach ($this->elements as $node) {
+			$node->setAttribute('value', $val);
+		}
 	}
 	function wrap($elem) {
 	}

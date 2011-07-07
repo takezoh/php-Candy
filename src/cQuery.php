@@ -2,6 +2,8 @@
 
 class cQuery {
 
+	protected $nodeset_class = 'cNodeSet';
+
 	const CHUNKER = '/((?:\((?:\([^()]+\)|[^()]+)+\)|\[(?:\[[^\[\]]*\]|[\'"][^\'"]*[\'"]|[^\[\]\'"]+)+\]|\\\\.|[^ >+~,(\[\\\\]+)+|[>+~])(\s*,\s*)?((?:.|\r|\n)*)/s';
 	const TAG_REGEXP = '/^((?:[\w\*\-]|\\\\.)+)(.*)?$/';
 
@@ -9,6 +11,8 @@ class cQuery {
 		'open_tag' => '<\s*%s(\s+(?:(?:\'.*?(?<!\\\\)\')|(?:".*?(?<!\\\\)")|[^>])*)?>',
 		'close_tag' => '<\s*\/\s*%s\s*>',
 	);
+
+	public $standalone = array('br', 'hr', 'img', 'input', 'meta');
 
 	protected $encoding = 'UTF-8';
 	protected $dom = null;
@@ -184,8 +188,8 @@ class cQuery {
 		$ret = array();
 		if (is_string($contents)) {
 			$dom = new DOMDocument();
-			$dom->loadHTML('<html><body>'.$contents.'</body></html>');
-			foreach ($dom->documentElement->firstChild->childNodes as $node) {
+			@$dom->loadHTML('<html><head><meta http-equiv="content-type" content="text/html; charset=utf8" /></head><body>'.$contents.'</body></html>');
+			foreach ($dom->documentElement->lastChild->childNodes as $node) {
 				$ret[] = $this->dom->importNode($node, true);
 			}
 		}
@@ -214,12 +218,13 @@ class cQuery {
 		return $this->_results_nodeset($this->_rex_css($expr));
 	}
 
-	protected function _results_nodeset($nodes) {
-		return new cNodeSet($nodes, (object)array(
+	protected function &_results_nodeset($nodes, $providers=null) {
+		$nodeset = new $this->nodeset_class($nodes, (object)array_merge(array(
 			'dom' => &$this->dom,
 			'xpath' => &$this->xpath,
 			'query' => &$this,
-		), $this->expr);
+		), (array)$providers), $this->expr);
+		return $nodeset;
 	}
 
 	protected function _rex_css($query) {
@@ -351,8 +356,8 @@ class cQuery {
 			$part = preg_replace('/\.((?:[\w\-_]|\\\\.)+)/', '[class~="$1"]', $part);
 			// [attr\S="var"]
 			$part = preg_replace_callback('/\[\s*((?:[\w\-_:]|\\\\.)+)\s*(?:(\S?=)\s*(?:([\'"])(.*?)(?<!\\\\)\3)|)\s*\]/', array($this, '_context_attr'), $part);
-			// :contents(text)
-			$part = preg_replace('/:contents\(([\'"])(.*?)(?<!\\\\)\1\)/', '[contains(text(), $1$2$1)]', $part);
+			// :contains(text)
+			$part = preg_replace('/:contains\(([\'"])(.*?)(?<!\\\\)\1\)/', '/text()[contains(string(.), $1$2$1)]/parent::*', $part);
 			// :*-child / (index/even/odd/equation)
 			$part = preg_replace_callback('/:(first|last|nth|only)-child(?:\(\s*(even|odd|(?:[+\-]?(\d+)(?:n\s*(?:[+\-]\s*(\d+))?)?))\s*\))?/', array($this, '_context_child'), $part);
 			// :empty

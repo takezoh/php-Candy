@@ -9,16 +9,11 @@ class candyQuery extends cQuery {
 	function __construct($source, &$compiler) {
 		$this->compiler = $compiler;
 		parent::__construct($source);
-		$this->dom;
+		$this->nodeset_class = 'candyNodeSet';
 	}
 
 	protected function _results_nodeset($nodes) {
-		return new candyNodeSet($nodes, (object) array(
-			'dom' => &$this->dom,
-			'xpath' => &$this->xpath,
-			'query' => &$this,
-			'compiler' => &$this->compiler,
-		), $this->expr);
+		return parent::_results_nodeset($nodes, array('compiler'=>&$this->compiler));
 	}
 
 	public function php($code) {
