@@ -10,11 +10,10 @@ class cNodeSet implements Iterator {
 	protected $query = null;
 
 	function __construct($source=null, $provider=null, $query=null) {
-		$this->query = $query;
-		$this->provider =& $provider;
-		if (is_null($this->provider)) {
-			$this->provider = (object) null;
-		}
+		$this->nodeList = $this->elements = array();
+		if (is_null($this->query)) $this->query = $query;
+		if (is_null($this->provider)) $this->provider = $provider;
+		if (is_null($this->provider)) $this->provider = (object) null;
 
 		if ($source instanceof DOMNode || $source instanceof DOMNodeList || $source instanceof $this->classname) {
 			$source = array($source);
@@ -181,58 +180,67 @@ class cNodeSet implements Iterator {
 	}
 
 	function append($contents) {
+		$nodes = array();
 		$contents = $this->provider->query->dom($contents);
 		foreach ($this->elements as $node) {
 			foreach ($contents as $content) {
 				$new = $content->cloneNode(true);
-				$node->appendChild($new);
+				$nodes[] = $node->appendChild($new);
 			}
 		}
 		$contents->remove();
+		$contents->__construct($nodes);
 		return $this;
 	}
 	function before($contents) {
+		$nodes = array();
 		$contents = $this->provider->query->dom($contents);
 		foreach ($this->elements as $node) {
 			if ($node->parentNode) {
 				foreach ($contents as $content) {
 					$new = $content->cloneNode(true);
-					$node->parentNode->insertBefore($new, $node);
+					$nodes[] = $node->parentNode->insertBefore($new, $node);
 				}
 			}
 		}
 		$contents->remove();
+		$contents->__construct($nodes);
 		return $this;
 	}
 	function after($contents) {
+		$nodes = array();
 		$contents = $this->provider->query->dom($contents);
 		foreach ($this->elements as $node) {
 			if ($node->parentNode) {
 				foreach ($contents as $content) {
 					$new = $content->cloneNode(true);
 					if ($ref = $node->nextSibling) {
-						$node->parentNode->insertBefore($new, $ref);
+						$nodes[] = $node->parentNode->insertBefore($new, $ref);
 					} else {
-						$node->parentNode->appendChild($new);
+						$nodes[] = $node->parentNode->appendChild($new);
 					}
 				}
 			}
 		}
 		$contents->remove();
+		$contents->__construct($nodes);
 		return $this;
 	}
 	function replace($contents) {
+		$nodes = array();
 		$contents = $this->provider->query->dom($contents);
 		foreach ($this->nodeList as &$node) {
 			if ($node->parentNode) {
 				foreach ($contents as $content) {
 					$new = $content->cloneNode(true);
-					$node->parentNode->insertBefore($new, $node);
+					$nodes[] = $node->parentNode->insertBefore($new, $node);
 				}
 				$node->parentNode->removeChild($node);
 			}
 		}
 		$contents->remove();
+		$contents->__construct($nodes);
+		$this->__construct($nodes);
 	}
 	function remove($selector=null) {
 		foreach ($this->nodeList as &$node) {

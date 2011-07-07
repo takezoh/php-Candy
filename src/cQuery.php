@@ -180,7 +180,7 @@ class cQuery {
 		return $source;
 	}
 
-	function dom($contents) {
+	function &dom($contents) {
 		$ret = array();
 		if (is_string($contents)) {
 			$dom = new DOMDocument();
@@ -195,7 +195,7 @@ class cQuery {
 			}
 		}
 		if ($contents instanceof DOMNode) {
-			$ret = array($contents);
+			$ret = array(&$contents);
 		}
 		if ($contents instanceof cNodeSet) {
 			return $contents;
