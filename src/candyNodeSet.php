@@ -47,8 +47,12 @@ class candyNodeSet extends cNodeSet {
 		$this->append($this->provider->dom->createCDATASection($code));
 	}
 
-	function bind($compiler_name) {
+	function bind($compiler_name, $attribute=null) {
+		if (!is_null($attribute)) {
+			$this->attr($compiler_name, $attribute);
+		}
 		$this->provider->compiler->do_compiler($compiler_name, $this);
+		$this->removeAttr($compiler_name);
 	}
 
 	function html($val=null) {

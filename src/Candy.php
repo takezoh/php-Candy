@@ -11,7 +11,7 @@
  * @version 0.5.0
  */
 
-include(dirname(__FILE__).'/varsHelper.php');
+// include(dirname(__FILE__).'/varsHelper.php');
 // include(dirname(__FILE__).'/templateFunction.php');
 
 class Candy {
@@ -74,7 +74,7 @@ class Candy {
 			self::USER_FUNC_PREFIX.'document' => array($this, '_func_document'),
 		);
 
-		$this->_vars = new varsHelper();
+		// $this->_vars = new varsHelper();
 	}
 	public function get_template_path($filename) {
 		if (preg_match('/^\//', $filename)) {
@@ -148,14 +148,12 @@ class Candy {
 				))." */ ?>\n\n". $compiled['source']
 			);
 		}
+
 		// include compiled cache!!
 		if (file_exists($cache)) {
 			$_sandbox = create_function('$'.self::PRIVATE_VARS_PREFIX.'compiled, &$'.self::PRIVATE_VARS_PREFIX.'vars, $'.self::PRIVATE_VARS_PREFIX.'functions', '
 				ob_start();
-				$'.self::PRIVATE_VARS_PREFIX.'vars_export = $'.self::PRIVATE_VARS_PREFIX.'vars->export();
-				foreach ($'.self::PRIVATE_VARS_PREFIX.'vars_export as $'.self::PRIVATE_VARS_PREFIX.'var_key => &$'.self::PRIVATE_VARS_PREFIX.'var) {
-					$$'.self::PRIVATE_VARS_PREFIX.'var_key =& $'.self::PRIVATE_VARS_PREFIX.'var;
-				}
+				extract($'.self::PRIVATE_VARS_PREFIX.'vars);
 				extract($'.self::PRIVATE_VARS_PREFIX.'functions);
 				include($'.self::PRIVATE_VARS_PREFIX.'compiled);
 				$'.self::PRIVATE_VARS_PREFIX.'ret = ob_get_contents();
@@ -183,17 +181,20 @@ class Candy {
 	}
 
 	public function get_var($name) {
-		return $this->_vars->get_var($name);
+		if (isset($this->_vars[$name])) {
+			return $this->_vars[$name];
+		}
+		return null;
 	}
 	public function assign($name, $value) {
 		if ($name && !preg_match('/^'.self::PRIVATE_VARS_PREFIX.'/', $name)) {
-			return $this->_vars->assign($name, $value);
+			return $this->_vars[$name] =& $value;
 		}
 		return false;
 	}
 	public function assing_ref($name, &$value) {
 		if ($name && !preg_match('/^'.self::PRIVATE_VARS_PREFIX.'/', $name)) {
-			return $this->_vars->assign_ref($name, $value);
+			return $this->_vars[$name] =& $value;
 		}
 		return false;
 	}
@@ -204,7 +205,6 @@ class Candy {
 	public function add_function($name, $function) {
 		$this->_get_external_file();
 		if (is_callable($function) && $name) {
-			// $this->_functions[self::USER_FUNC_PREFIX.$name] = new TemplateFunction($name, $function);
 			$this->_functions[self::USER_FUNC_PREFIX.$name] = $function;
 			return true;
 		}

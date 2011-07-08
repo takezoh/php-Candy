@@ -41,7 +41,7 @@ php:contentの値をPHPとして評価した結果で要素内を置き換える
 <div>helloworld!!</div>
 ```
 
-*※PHPの評価結果が偽と評価された場合、親要素（例ではdiv）自体を出力しません。*  
+*※PHPの評価結果が偽と評価された場合、親要素（例ではdiv）自体を出力しません。*
 *※php:replaceと同じ要素に指定した場合、php:replaceが優先されます。*
 
 ### php:replace
@@ -55,8 +55,8 @@ php:replaceの値をPHPとして評価した結果で親要素を置き換える
 hello world!!
 ```
 
-*※PHPの評価結果が偽と評価された場合、親要素（例ではdiv）自体を出力しません。*  
-*※php:contentと同じ要素に指定した場合、php:replaceが優先されます。*  
+*※PHPの評価結果が偽と評価された場合、親要素（例ではdiv）自体を出力しません。*
+*※php:contentと同じ要素に指定した場合、php:replaceが優先されます。*
 *※php:attr, php:*を同じ要素に指定した場合、php:attr, php:*は評価されません。*
 
 ### php:while
@@ -115,7 +115,7 @@ php:ifの値をPHP::ifとして評価し、"真"の場合のみ出力します�
 
 ### php:elseif
 
-直前の兄弟要素の php:if 又は php:elseif の評価が"偽"の場合に PHP:if として評価を行う。  
+直前の兄弟要素の php:if 又は php:elseif の評価が"偽"の場合に PHP:if として評価を行う。
 また、値が空の場合は、PHP:else として評価し条件分岐を終了する。
 
 ```html
@@ -143,7 +143,7 @@ php:ifの値をPHP::ifとして評価し、"真"の場合のみ出力します�
 
 ### php:attrs
 
-php:attrの値から親要素の属性を設定します。  
+php:attrの値から親要素の属性を設定します。
 表記は [属性名=値]。複数指定の場合はカンマで区切ります。
 
 ```html
@@ -169,7 +169,7 @@ php:period="StartTime, FinishTime" と記述し、StartTimeからFinishTimeの�
 <div>php:period</div>
 ```
 
-*※指定フォーマットは、*yyyy-mm-dd hh:mm:ss* です。StartTime, FinishTime どちらか一方の指定も可能です。*  
+*※指定フォーマットは、*yyyy-mm-dd hh:mm:ss* です。StartTime, FinishTime どちらか一方の指定も可能です。*
 *※日付部分を省略し *hh:mm:ss* とした場合、実行時の日付として動作します。*
 
 ### php:*
@@ -220,8 +220,8 @@ ${ 簡易PHP } とすることで、要素の属性値以外の場所へ記述�
 
 ## 簡易PHP
 
-文字列に引用符を必要としない基本的にPHPの文法です。  
-文字の塊を文字列として認識します。  
+文字列に引用符を必要としない基本的にPHPの文法です。
+文字の塊を文字列として認識します。
 空白含む文字列や演算子を文字列として扱いたい場合は、明示的に引用符で括ります。
 
 ## Smarty互換モード
@@ -235,9 +235,9 @@ ${ 簡易PHP } とすることで、要素の属性値以外の場所へ記述�
 include('./smarty/Smarty.class.php');
 new Candy(array(
 	"smarty" => new Smarty(),
-	"cache-use" => true,
-	"cache-directory" => "./cache/",
-	"template-directory" => "./templates/",
+	"cache.use" => true,
+	"cache.directory" => "./cache/",
+	"template.directory" => "./templates/",
 ));
 ?>
 ```

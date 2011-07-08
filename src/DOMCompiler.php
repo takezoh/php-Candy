@@ -9,7 +9,7 @@ class DOMCompiler {
 		'native_php' => '<\?php\s*((?:([\'"]).*?(?<!\\\\)\2|.)*?)\s*\?>',
 	);
 
-	public $vars = null;
+	protected $candy = null;
 	protected $cache_conf = null;
 	protected $smarty = null;
 
@@ -22,8 +22,8 @@ class DOMCompiler {
 	protected $_smarty_exclude = array();
 	protected $_smarty_header = null;
 
-	function __construct(&$vars, $cache_conf, &$smarty=null) {
-		$this->vars = $vars;
+	function __construct(&$candy, $cache_conf, &$smarty=null) {
+		$this->candy = $candy;
 		$this->cache_conf = $cache_conf;
 		$this->smarty = $smarty;
 		$this->_php_parser = new SimplePhpParser();
@@ -51,7 +51,7 @@ class DOMCompiler {
 	}
 
 	protected function _save($source) {
-		$source = preg_replace('/<php>(?:<\!\[CDATA\[)?(.*?)(?:\]\]>)?<\/php>/s', '<?php $1 ?>', $source);
+		$source = preg_replace('/<(php|function)>(.*?)<\/\1>/s', '<?php $2 ?>', $source);
 		$source = preg_replace_callback('/<phpblock type="(.*?)"(?: (eval)="(.*?)")?>((?:(?R)|.)*?)<\/phpblock>/s', array($this, '_cb_phpblock'), $source);
 		$source = preg_replace_callback('/%@CANDY:[^%]+%/', array($this, 'get_phpcode'), $source);
 		$source = preg_replace('/\s+\?>[\s]*<\?php\s+/s', ' ', $source);
@@ -233,6 +233,11 @@ class DOMCompiler {
 			return $this->_query->php($code);
 		}
 	}
+	public function func($name, $args_str=null) {
+		if (!is_null($this->_query)) {
+			return $this->_query->func($name, $args_str);
+		}
+	}
 
 	public function do_compiler($compiler, $elements) {
 		if ($elements && $elements->length > 0) {
@@ -243,10 +248,6 @@ class DOMCompiler {
 				call_user_func($compiler, $elements, $this);
 			}
 		}
-	}
-
-	public function func($name, $args_str=null) {
-		return $this->_query->php('echo '. $this->_php_parser->parse($name . '('. $args_str .')') .';');
 	}
 }
 

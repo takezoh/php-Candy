@@ -21,5 +21,12 @@ class candyQuery extends cQuery {
 		$php->appendChild($this->dom->createCDATASection($code));
 		return $php;
 	}
+
+	public function func($name, $args_str=null) {
+		$func = $this->dom->createElement('function');
+		$code = 'extract((array)'. $this->compiler->PHPParse($name .'('. $args_str .')') .');';
+		$func->appendChild($this->dom->createCDATASection($code));
+		return $func;
+	}
 }
 ?>

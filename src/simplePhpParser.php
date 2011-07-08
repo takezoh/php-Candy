@@ -48,7 +48,7 @@ class SimplePhpParser {
 				}
 				$args = substr($this->parse($matched[3]), 1, -1);
 				return '(isset($'.Candy::USER_FUNC_PREFIX.$token.')?'.
-					$ex.'call_user_func($'.Candy::USER_FUNC_PREFIX.$token.($args?','.$args.',$'.Candy::PRIVATE_VARS_PREFIX.'vars':',$'.Candy::PRIVATE_VARS_PREFIX.'vars').'):'.
+					$ex.'call_user_func($'.Candy::USER_FUNC_PREFIX.$token.($args?','.$args:'').'):'.
 					'(is_callable(\''.$token.'\')?'.$ex.$token.'('.$args.')'.
 					':null))';
 				// if (array_key_exists(self::USER_FUNC_PREFIX.$token, $this->_functions)) {
