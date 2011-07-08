@@ -29,6 +29,7 @@ class candyNodeSet extends cNodeSet {
 		$wrapper = $this->provider->dom->createElement('phpblock');
 		$wrapper->setAttribute('type', $type);
 		if (!is_null($eval)) {
+			$eval = $this->provider->compiler->prepare($eval);
 			$wrapper->setAttribute('eval', $this->provider->compiler->add_phpcode($eval));
 		}
 		foreach ($this->nodeList as $node) {
@@ -36,7 +37,7 @@ class candyNodeSet extends cNodeSet {
 			$block->appendChild($node->parentNode->replaceChild($block, $node));
 			$wrappers[] = $block;
 		}
-		return new $this->classname($wrappers, $this->provider);
+		return $this->_new_nodeset($wrappers);
 	}
 
 	function php($code=null) {

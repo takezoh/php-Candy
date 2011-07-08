@@ -17,6 +17,7 @@ class candyQuery extends cQuery {
 	}
 
 	public function php($code) {
+		$code = $this->compiler->prepare($code);
 		$php = $this->dom->createElement('php');
 		$php->appendChild($this->dom->createCDATASection($code));
 		return $php;

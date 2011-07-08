@@ -6,20 +6,18 @@ class PHPCompilers {
 	function nodelist_compiler_content($elements, $compiler) {
 		$elements->_empty();
 		foreach ($elements as $element) {
-			$varname = '$'.Candy::PRIVATE_VARS_PREFIX.'tmp_'. uniqid();
-			$element->before($compiler->php($varname .'='.$compiler->PHPParse($element->attr('php:content')).';'));
-			$element->phpwrapper('if', '(bool)'.$varname);
-			$element->append($compiler->php('echo '. $varname .';'));
+			$element->before($compiler->php('$='.$compiler->PHPParse($element->attr('php:content')).';'));
+			$element->phpwrapper('if', '(bool)$');
+			$element->append($compiler->php('echo $;'));
 		}
 	}
 
 	// php:replace
 	function nodelist_compiler_replace($elements, $compiler) {
 		foreach ($elements as $element) {
-			$varname = '$'.Candy::PRIVATE_VARS_PREFIX.'tmp_'. uniqid();
-			$element->before($compiler->php($varname .'='. $compiler->PHPParse($element->attr('php:replace')).';'));
-			$element->phpwrapper('if', '(bool)'. $varname);
-			$element->before($compiler->php('echo '. $varname .';'));
+			$element->before($compiler->php('$='. $compiler->PHPParse($element->attr('php:replace')).';'));
+			$element->phpwrapper('if', '(bool)$');
+			$element->before($compiler->php('echo $;'));
 		}
 		$elements->remove();
 	}
@@ -71,10 +69,8 @@ class PHPCompilers {
 						$var = "''";
 					}
 				}
-				$var_cycle_vars = '$'.Candy::PRIVATE_VARS_PREFIX.'tmp_'. uniqid();
-				$var_cycle_cnt = '$'.Candy::PRIVATE_VARS_PREFIX.'tmp_'. uniqid();
-				$init_cycle = $compiler->php($var_cycle_cnt.'=0;'.$var_cycle_vars.'=array('. join(',', $vars) .');');
-				$do_cycle = $compiler->php('if((int)'.$var_cycle_cnt.'>='.count($vars).')'.$var_cycle_cnt.'=0;'.$results[2][0].'='.$var_cycle_vars.'['.$var_cycle_cnt.'++];');
+				$init_cycle = $compiler->php('$:candy_cycle_count=0;$:candy_cycle_vars=array('. join(',', $vars) .');');
+				$do_cycle = $compiler->php('if((int)$:candy_cycle_count>='.count($vars).')$:candy_cycle_count=0;'.$results[2][0].'=$:candy_cycle_vars[$:candy_cycle_count++];');
 				return compact('init_cycle', 'do_cycle');
 			}
 		}
@@ -120,8 +116,8 @@ class PHPCompilers {
 	function nodelist_compiler_period($elements, $compiler) {
 		foreach ($elements as $element) {
 			list($start, $finish) = explode(',', $element->attr('php:period'));
-			$element->before($compiler->php('$'.Candy::PRIVATE_VARS_PREFIX.'period_now=time();$'.Candy::PRIVATE_VARS_PREFIX.'period_start=@strtotime("'.trim($start).'");$'.Candy::PRIVATE_VARS_PREFIX.'period_finish=@strtotime("'.trim($finish).'");'));
-			$element->phpwrapper('if', '(!$'.Candy::PRIVATE_VARS_PREFIX.'period_start || $'.Candy::PRIVATE_VARS_PREFIX.'period_start <= $'.Candy::PRIVATE_VARS_PREFIX.'period_now) && (!$'.Candy::PRIVATE_VARS_PREFIX.'period_finish || $'.Candy::PRIVATE_VARS_PREFIX.'period_finish >= $'.Candy::PRIVATE_VARS_PREFIX.'period_now)');
+			$element->before($compiler->php('$:candy_period_now=time();$:candy_period_start=@strtotime("'.trim($start).'");$:candy_period_finish=@strtotime("'.trim($finish).'");'));
+			$element->phpwrapper('if', '(!$:candy_period_start || $:candy_period_start <= $:candy_period_now) && (!$:candy_period_finish || $:candy_period_finish >= $:candy_period_now)');
 		}
 	}
 

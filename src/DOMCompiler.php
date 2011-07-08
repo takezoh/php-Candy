@@ -18,6 +18,7 @@ class DOMCompiler {
 	protected $_compile_triggers = array();
 	protected $_compilers = array();
 
+	protected $varnames = array();
 	protected $_phpcode = array();
 	protected $_smarty_exclude = array();
 	protected $_smarty_header = null;
@@ -212,7 +213,26 @@ class DOMCompiler {
 
 	// php parser
 	public function PHPParse($code) {
+		$code = $this->prepare($code);
 		return $this->_php_parser->parse($code);
+	}
+	public function prepare($code) {
+		$code = preg_replace_callback('/\$(?![_a-zA-Z0-9])(?::\w+)?\s*=?/', array($this, '_prepare_variable'), $code);
+		return $code;
+	}
+	protected function _prepare_variable($var) {
+		$var = $var[0];
+		$name = null;
+		if (preg_match('/^\$:(\w+)/', $var, $m)) {
+			$name = $m[1];
+		}
+		if (preg_match('/=$/', $var)) {
+			if (!$name || !isset($this->varnames[$name])) {
+				$this->varnames[$name] = Candy::PRIVATE_VARS_PREFIX.'tmp_'.uniqid();
+			}
+			return '$'. $this->varnames[$name].'=';
+		}
+		return '$'. $this->varnames[$name];
 	}
 
 	// css selector
