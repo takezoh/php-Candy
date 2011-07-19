@@ -8,15 +8,14 @@
  * @copyright 2011 Takehito Gondo
  * @package Candy
  * @lisence MIT License
- * @version 0.5.0
+ * @version 0.5.1
  */
 
-// include(dirname(__FILE__).'/varsHelper.php');
-// include(dirname(__FILE__).'/templateFunction.php');
+include(dirname(__FILE__).'/candyFunctions.php');
 
 class Candy {
 
-	const VERSION = "0.5.0";
+	const VERSION = "0.5.1";
 	const PRIVATE_VARS_PREFIX = '__candy_';
 	const USER_FUNC_PREFIX = '__candy_func_';
 
@@ -69,12 +68,17 @@ class Candy {
 			// $this->_logger = Log::factory($this->_config->log->type, $this->_config->log->directory.'/error.log', 'Candy.php');
 		// }
 		// Init "Template Functions"
+		$candyFunctions = new candyFunctions($this);
 		$this->_functions = array(
-			// self::USER_FUNC_PREFIX.'document' => new TemplateFunction('document', array($this, '_func_document')),
-			self::USER_FUNC_PREFIX.'document' => array($this, '_func_document'),
+			self::USER_FUNC_PREFIX.'document' => array($candyFunctions, 'document'),
+			self::USER_FUNC_PREFIX.'now' => array($candyFunctions, 'now'),
+			self::USER_FUNC_PREFIX.'upper' => array($candyFunctions, 'upper'),
+			self::USER_FUNC_PREFIX.'lower' => array($candyFunctions, 'lower'),
+			self::USER_FUNC_PREFIX.'capitalize' => array($candyFunctions, 'capitalize'),
+			self::USER_FUNC_PREFIX.'format' => array($candyFunctions, 'format'),
+			self::USER_FUNC_PREFIX.'truncate' => array($candyFunctions, 'truncate'),
+			// self::USER_FUNC_PREFIX.'counter' => array($candyFunctions, 'counter'),
 		);
-
-		// $this->_vars = new varsHelper();
 	}
 	public function get_template_path($filename) {
 		if (preg_match('/^\//', $filename)) {
@@ -100,6 +104,7 @@ class Candy {
 			if (!$this->_config->cache->use || (int)filectime($cache) < (int)filectime($tpl)) {
 				$is_compile = true;
 			}
+			/*
 			if (!$is_compile) {
 				$externals = $this->_get_externals_info();
 				list($header,) = explode("\n\n", file_get_contents($cache), 2);
@@ -119,11 +124,13 @@ class Candy {
 					$is_compile = true;
 				}
 			}
+			*/
 		}
 
 		// Compile!!
 		if ($is_compile && $tpl_exists) {
 			if (!class_exists('DOMCompiler')) {
+				include(dirname(__FILE__).'/simplePhpLexer.php');
 				include(dirname(__FILE__).'/simplePhpParser.php');
 				include(dirname(__FILE__).'/candyNodeSet.php');
 				include(dirname(__FILE__).'/candyQuery.php');
@@ -160,7 +167,7 @@ class Candy {
 				ob_end_clean();
 				return $'.self::PRIVATE_VARS_PREFIX.'ret;
 			');
-			return $_sandbox($cache, $this->_vars, $this->_functions);
+			return $_sandbox($cache, $this->load_config($tpl), $this->_functions);
 		}
 		// fetch error
 		return false;
@@ -199,29 +206,37 @@ class Candy {
 		return false;
 	}
 	public function add_compiler($selector, $callback) {
-		$this->_get_external_file();
+		// $this->_get_external_file();
 		return $this->_compilers[] = compact('selector', 'callback');
 	}
 	public function add_function($name, $function) {
-		$this->_get_external_file();
+		// $this->_get_external_file();
 		if (is_callable($function) && $name) {
 			$this->_functions[self::USER_FUNC_PREFIX.$name] = $function;
 			return true;
 		}
 		return false;
 	}
-
-	function _func_document($file) {
-		if (preg_match('/\.(?:tpl|html|htm)$/', $file)) {
-			return $this->fetch($file);
+	public function load_config($file) {
+		if (file_exists($file = preg_replace('/\.(html|htm|tpl)$/', '.config', $file)) || file_exists($file = preg_replace('/\.config$/', '.conf', $file))) {
+			if ($len = preg_match_all('/^\s*(?:(\w+)\s*=)?\s*(([\'"]).*?(?<!\\\\)\2|[^#])*?\s*$/', file_get_contents($file), $m, PREG_SET_ORDER)) {
+				$config = array();
+				$conf = null;
+				for ($i=0; $i<$len; ++$i) {
+					if (empty($m[$i][1])) {
+						if ($conf) {
+							$conf .= ' '. $m[$i][2];
+						}
+					} else {
+						$conf =& $config[$m[$i][1]];
+						$conf = $m[$i][2];
+					}
+				}
+				return array_merge($this->_vars, $config);
+			}
 		}
-		ob_start();
-		include($file);
-		$contents = ob_get_contents();
-		ob_end_clean();
-		return $contents;
+		return $this->_vars;
 	}
-
 }
 
 ?>

@@ -1,0 +1,68 @@
+■php:content
+<div>hello{$string}</div>
+
+■php:replace
+hello {$string}
+
+■php:foreach
+{foreach from=$array item=var}
+	<div>{$var}</div>
+{/foreach}
+
+■php:foreachelse
+{foreach from=$null_array item=var}
+	<div>{$var}</div>
+{foreachelse}
+	<div>php:foreachelse</div>
+{/foreach}
+
+■php:if
+{if $true}
+	<div>php:if [ $true ]</div>
+{/if}
+{if $false}
+	<div>php:if [ $false ]</div>
+{/if}
+
+■php:elseif
+{if !$true}
+	<div>php:if [ !$true ]</div>
+{elseif $true}
+	<div>php:elseif [ $true ]</div>
+{/if}
+{if !$true}
+	<div>php:if [ !$true ]</div>
+{else}
+	<div>php:elseif [ ]</div>
+{/if}
+
+■php:cycle
+{foreach from=$array item=var}
+	<div class="{cycle values="odd,even"}" >{$var}</div>
+{/foreach}
+
+■php:attrs
+<div class="{$string}" title="hello {$string}">php:attrs</div>
+
+■php:*
+<div class="{$string}" title="hello {$string}">php:*</div>
+
+■php:period
+{php}
+$candy_period_now=time();
+$candy_period_start=@strtotime("'.trim($start).'");
+$candy_period_finish=@strtotime("'.trim($finish).'");
+if (!$candy_period_start || $candy_period_start <= $candy_period_now) && (!$candy_period_finish || $candy_period_finish >= $candy_period_now)){
+{/php}
+<div php:period=", 2011-03-17 18:00:00">php:period</div>
+{php}
+}
+{/php}
+
+■\${ PHP }
+<div>hello ${$string}</div>
+
+
+■Functions
+document():<div>{include file='include.html'}</div>
+

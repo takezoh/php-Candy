@@ -8,14 +8,14 @@ header('Content-Type: text/html; charset=utf8');
 echo '<pre>';
 
 echo '<h2>PHPUnit</h2>';
-system('phpunit tests 2>&1');
+// system('phpunit tests 2>&1');
 
 include('src/Candy.php');
 
 $candy = new Candy(array(
-	'log.type' => 'file',
-	'log.directory' => 'sample/logs',
-	'debugging' => true,
+	// 'log.type' => 'file',
+	// 'log.directory' => 'sample/logs',
+	// 'debugging' => true,
 	'cache.use' => false,
 	'cache.directory' => 'sample/cache',
 	'template.directory' => 'sample/template',

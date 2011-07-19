@@ -36,14 +36,9 @@
 ■php:period
 <div php:period=", 2011-03-17 18:00:00">php:period</div>
 
-■php:foreach > php:if
-<div php:foreach="$array as $var" php:if="$var" php:content="$var"></div>
-<div php:elseif="$var" php:content="$var"></div>
-<div php:foreachelse="">php:foreachelse</div>
-
 
 ■\${ PHP }
-<div>${'hello '. $string}</div>
+<div>hello ${$string}</div>
 
 
 ■Functions

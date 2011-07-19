@@ -14,9 +14,11 @@ class DOMCompiler {
 	protected $smarty = null;
 
 	protected $_query = null;
-	protected $_php_parser = null;
 	protected $_compile_triggers = array();
 	protected $_compilers = array();
+
+	public $php_lexer= null;
+	public $php_parser = null;
 
 	protected $varnames = array();
 	protected $_phpcode = array();
@@ -27,7 +29,8 @@ class DOMCompiler {
 		$this->candy = $candy;
 		$this->cache_conf = $cache_conf;
 		$this->smarty = $smarty;
-		$this->_php_parser = new SimplePhpParser();
+		$this->php_lexer = new simplePhpLexer();
+		$this->php_parser = new simplePhpParser();
 	}
 
 	public function add_compiler($expr, $callback) {
@@ -89,7 +92,7 @@ class DOMCompiler {
 	}
 	protected function _cb_attr_simple_php($matched) {
 		if (isset($matched[1])) {
-			return $this->add_phpcode('echo '. $this->_php_parser->parse($matched[1]).';', 'phpset');
+			return $this->add_phpcode('echo '. $this->PHPParse($matched[1]).';', 'phpset');
 		}
 		return null;
 	}
@@ -102,8 +105,8 @@ class DOMCompiler {
 	}
 	protected function _cb_simple_php($matched) {
 		if (!empty($matched[1])) {
-			// return '<php><![CDATA[echo '. $this->_php_parser->parse($matched[1]) .';]]></php>';
-			return '<php>'. $this->add_phpcode('echo '. $this->_php_parser->parse($matched[1]) .';') .'</php>';
+			// return '<php><![CDATA[echo '. $this->PHPParse($matched[1]) .';]]></php>';
+			return '<php>'. $this->add_phpcode('echo '. $this->PHPParse($matched[1]) .';') .'</php>';
 		}
 		return null;
 	}
@@ -212,9 +215,18 @@ class DOMCompiler {
 	}
 
 	// php parser
-	public function PHPParse($code) {
+	public function PHPParse($code, $statement=null) {
 		$code = $this->prepare($code);
-		return $this->_php_parser->parse($code);
+		if ($lex = $this->PHPLex($code, $statement)) {
+			return $this->php_parser->parse($lex, $statement);
+		}
+		return null;
+	}
+	public function PHPLex($code, $statement=null) {
+		if (!preg_match('/^{.*}$/', $code)) {
+			$code = '{'.$code.'}';
+		}
+		return $this->php_lexer->lexing($code, $statement);
 	}
 	public function prepare($code) {
 		$code = preg_replace_callback('/\$(?![_a-zA-Z0-9])(?::\w+)?\s*=?/', array($this, '_prepare_variable'), $code);
@@ -232,7 +244,7 @@ class DOMCompiler {
 			}
 			return '$'. $this->varnames[$name].'=';
 		}
-		return '$'. $this->varnames[$name];
+		return '$'. $this->varnames[$name].' ';
 	}
 
 	// css selector

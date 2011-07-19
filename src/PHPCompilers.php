@@ -26,15 +26,12 @@ class PHPCompilers {
 	function nodelist_compiler_foreach($elements, $compiler) {
 		$else = $elements->_next();
 		foreach ($elements as $element) {
-			if (preg_match('/^(.*?)\s+as\s*(\$[A-Za-z_]\w*)(?:\s*=>\s*(\$[A-Za-z_]\w*))?$/', $element->attr('php:foreach'), $matched)) {
-				$var = $compiler->PHPParse(trim($matched[1]));
-				$key = $matched[2];
-				$val = $matched[3];
-
+			if ($lex = $compiler->PHPLex($element->attr('php:foreach'), 'foreach')) {
+				$expression = $compiler->php_parser->parse($lex->array_expression);
 				extract((array)$this->node_compiler_cycle($element, $compiler));
-				$element->phpwrapper('if', 'count((array)'.$var.')');
+				$element->phpwrapper('if', 'count((array)($='.$expression.'))');
 				if ($init_cycle) $element->before($init_cycle);
-				$element->phpwrapper('foreach', '(array)'.$var.' as '.$key.($val ? ' => '.$val:''));
+				$element->phpwrapper('foreach', '(array)$ as '.(isset($lex->key)?$lex->key.'=>':'').$lex->value);
 				if ($do_cycle) $element->before($do_cycle);
 			}
 		}
@@ -60,17 +57,14 @@ class PHPCompilers {
 	// php:cycle
 	function node_compiler_cycle($element, $compiler) {
 		if ($cycle = $element->attr('php:cycle')) {
-			if (preg_match_all('/\((.*)\)\s*as\s*(\$[^\s]+)/i', $cycle, $results)) {
-				$vars = preg_split('/\s*,\s*/', $results[1][0]);
-				foreach ($vars as &$var) {
-					if ($var) {
-						$var = $compiler->PHPParse($var);
-					} else {
-						$var = "''";
+			if ($lex = $compiler->PHPlex($cycle, 'cycle')) {
+				foreach ($lex->strings as &$string) {
+					if (preg_match('/^\$|\'|"/', $string)) {
+						$string = "'$string'";
 					}
 				}
-				$init_cycle = $compiler->php('$:candy_cycle_count=0;$:candy_cycle_vars=array('. join(',', $vars) .');');
-				$do_cycle = $compiler->php('if((int)$:candy_cycle_count>='.count($vars).')$:candy_cycle_count=0;'.$results[2][0].'=$:candy_cycle_vars[$:candy_cycle_count++];');
+				$init_cycle = $compiler->php('$:candy_cycle_count=0;$:candy_cycle_vars=array('. join(',', $lex->strings) .');');
+				$do_cycle = $compiler->php('if((int)$:candy_cycle_count>='.count($lex->strings).')$:candy_cycle_count=0;'.$lex->identifier.'=$:candy_cycle_vars[$:candy_cycle_count++];');
 				return compact('init_cycle', 'do_cycle');
 			}
 		}
@@ -103,10 +97,11 @@ class PHPCompilers {
 	// php:attrs
 	function nodelist_compiler_attrs($elements, $compiler) {
 		foreach ($elements as $element) {
-			foreach (explode(',', $element->attr('php:attrs')) as $value) {
-				list($name, $value) = explode('=', $value, 2);
-				if (!empty($value)) {
-					$element->attrPHP(trim($name), 'echo '. $compiler->PHPParse(trim($value)) .';');
+			if ($lex = $compiler->PHPLex($element->attr('php:attrs'), 'attrs')) {
+				foreach ($lex as $attr) {
+					if ($value = $compiler->php_parser->parse($attr->value)) {
+						$element->attrPHP($attr->name, 'echo '. $value);
+					}
 				}
 			}
 		}
@@ -131,7 +126,6 @@ class PHPCompilers {
 			}
 		}
 	}
-
 }
 
 ?>
