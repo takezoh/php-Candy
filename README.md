@@ -7,7 +7,7 @@ PHP製DOMベーステンプレートエンジン
 * jQueryライクなDOM操作でコンパイラの拡張ができます。
 * jQueryライクなCSSセレクタを実装しています。
 
-## クイックスタート
+## 使い方
 
 ```php
 <?php
@@ -203,6 +203,44 @@ $fileをインクルードし、出力します。
 ```html
 <div><strong>Hello World!</strong></div>
 ```
+
+### date( $format=null, $timstamp=null )
+
+$timestamp を $format にもとづいてフォーマットします。
+
+*strftime()* のラッパーです。
+
+引数の初期値：  
+  $format : %Y-%m-%d %H:%M:%S  
+  $timestamp : time()
+
+### upper( $string )
+
+$string のアルファベットを大文字にします。  
+*strtoupper()* のラッパーです。
+
+### lower( $string )
+
+$string のアルファベットを小文字にします。  
+*strtolower()* のラッパーです。
+
+### capitalize( $string )
+
+$string がアルファベットの場合、各単語の最初の文字を大文字にします。  
+*ucwords()* のラッパーです。
+
+### format( $format, $string=null )
+
+$format に数値を渡した場合は  
+  *number_format( $format )*  
+それ以外の場合は  
+  *sprintf( $format, $string )*  
+を返します。
+
+### truncate( $string, $length, $end='...' )
+
+$string の長さが $length を超える場合、  
+$string の先頭から $length までの文字列に、$end を連結して返します。
 
 *※その他、PHPの組込関数や、グローバルスコープでコール可能な関数を利用できます。*
 
