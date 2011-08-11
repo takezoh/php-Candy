@@ -71,7 +71,7 @@ class Candy {
 		$candyFunctions = new candyFunctions($this);
 		$this->_functions = array(
 			self::USER_FUNC_PREFIX.'document' => array($candyFunctions, 'document'),
-			self::USER_FUNC_PREFIX.'now' => array($candyFunctions, 'now'),
+			self::USER_FUNC_PREFIX.'date' => array($candyFunctions, 'date'),
 			self::USER_FUNC_PREFIX.'upper' => array($candyFunctions, 'upper'),
 			self::USER_FUNC_PREFIX.'lower' => array($candyFunctions, 'lower'),
 			self::USER_FUNC_PREFIX.'capitalize' => array($candyFunctions, 'capitalize'),

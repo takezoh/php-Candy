@@ -17,7 +17,7 @@ class candyFunctions {
 		return $contents;
 	}
 
-	function now($format=null, $timestamp=null) {
+	function date($format=null, $timestamp=null) {
 		if (is_int($format)) {
 			$timestamp = $format;
 			$format = null;
